@@ -36,3 +36,6 @@ If the tests pass, install the ASPyRE package for the currently active Conda env
 cd /path/to/git/clone/folder
 python setup.py install
 ```
+
+## Class Diagram
+![Class Diagram](docs/aspyre.png)
