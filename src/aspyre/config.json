@@ -1,0 +1,40 @@
+{
+    "logging": {
+        "version": 1,
+        "formatters": {
+            "simple_formatter": {
+                "format": "%(asctime)s %(message)s",
+                "datefmt": "%Y/%m/%d %H:%M:%S"
+            }
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "simple_formatter",
+                "level": "DEBUG",
+                "stream": "ext://sys.stdout"
+            }
+        },
+        "loggers": {
+            "cryo": {
+                "level": "DEBUG",
+                "handlers": ["console"]
+            }
+        }
+    },
+
+    "starfile": {
+        "n_workers": -1
+    },
+
+    "covar": {
+        "cg_tol": 1e-5
+    },
+
+    "nfft_backends": [
+        "finufft",
+        "pynfft"
+    ]
+}
+
+
