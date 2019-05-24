@@ -1,3 +1,4 @@
+[![Azure Build Status](https://dev.azure.com/vineetbansal0645/ASPyRE/_apis/build/status/vineetbansal.ASPyRE?branchName=master)](https://dev.azure.com/vineetbansal0645/ASPyRE/_build/latest?definitionId=1&branchName=master)
 [![Travis Build Status](https://travis-ci.org/vineetbansal/ASPyRE.svg?branch=master)](https://travis-ci.org/vineetbansal/ASPyRE)
 [![Appveyor Build status](https://ci.appveyor.com/api/projects/status/hlotnubf7x015ipy/branch/master?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspyre/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/vineetbansal/aspyre/badge.svg?branch=master&service=github)](https://coveralls.io/github/vineetbansal/aspyre?branch=master)
