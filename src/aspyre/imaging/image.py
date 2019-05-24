@@ -9,7 +9,7 @@ class Image(np.ndarray):
         raise NotImplementedError
 
 
-class PixelImage(Image):
+class CartesianImage(Image):
     def expand(self, basis):
         return BasisImage(basis)
 
@@ -19,7 +19,7 @@ class BasisImage(Image):
         self.basis = basis
 
     def evaluate(self):
-        return PixelImage()
+        return CartesianImage()
 
 
 class FBBasisImage(BasisImage):

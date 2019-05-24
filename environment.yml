@@ -6,15 +6,17 @@ channels:
 
 dependencies:
   - cython=0.26.1
+  - fftw
   - make
   - numpy=1.14.2
   - numpydoc=0.7.0
   - pandas>=0.23.4
   - pip
   - pybind11
-  - pytest=3.2.1
+  - pytest
   - python=3.6
   - scikit-image=0.14.0
+  - scikit-learn
   - scipy=0.19.1
   - sphinxcontrib-bibtex=0.4.0
   - wheel
@@ -23,6 +25,7 @@ dependencies:
     - finufftpy
     - importlib_resources>=1.0.2
     - mrcfile
+    - pyfftw
     - pytest-cov
     - sphinx-rtd-theme==0.4.2
     - tqdm

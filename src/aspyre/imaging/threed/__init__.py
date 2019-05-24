@@ -18,7 +18,7 @@ class Volume(np.ndarray):
         raise NotImplementedError
 
 
-class PixelVolume(Volume):
+class CartesianVolume(Volume):
     def expand(self, basis):
         return BasisVolume(basis)
 
@@ -28,7 +28,7 @@ class BasisVolume(Volume):
         self.basis = basis
 
     def evaluate(self):
-        return PixelVolume()
+        return CartesianVolume()
 
 
 class FBBasisVolume(BasisVolume):
