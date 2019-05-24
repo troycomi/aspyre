@@ -4,7 +4,7 @@ import numpy as np
 from aspyre.imaging import im_filter, im_translate
 from aspyre.imaging.threed import im_backproject, vol_project
 from aspyre.imaging.filters import IdentityFilter, ScalarFilter
-from aspyre.cov3d.estimation.noise import WhiteNoiseEstimator
+from aspyre.estimation.noise import WhiteNoiseEstimator
 from aspyre.utils import ensure, randn, randi, grid_2d
 from aspyre.utils.matlab_compat import m_reshape
 

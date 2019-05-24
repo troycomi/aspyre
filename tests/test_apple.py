@@ -19,8 +19,8 @@ class ApplePickerTestCase(TestCase):
     def testPick(self):
         config = copy(ApplePickerConfig)
         config.particle_size = 78
-        apple_picker = Apple(config, DATA_DIR)
 
         with TemporaryDirectory() as temp_dir:
             config.output_dir = temp_dir
+            apple_picker = Apple(config, DATA_DIR)
             apple_picker.pick_particles()

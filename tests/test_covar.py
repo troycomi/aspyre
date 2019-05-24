@@ -8,8 +8,8 @@ from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
 from aspyre.basis.fb_3d import FBBasis3D
 from aspyre.imaging.filters import RadialCTFFilter
-from aspyre.cov3d.estimation.mean import MeanEstimator
-from aspyre.cov3d.estimation.covar import CovarianceEstimator
+from aspyre.estimation.mean import MeanEstimator
+from aspyre.estimation.covar import CovarianceEstimator
 from aspyre.utils.mdim import eigs
 from aspyre.utils import src_wiener_coords, Random
 

@@ -11,9 +11,9 @@ from aspyre.nfft import anufft3
 from aspyre.utils import mdim_ifftshift, vol_to_vec, vecmat_to_volmat, volmat_to_vecmat, ensure, \
     symmat_to_vec_iso, vec_to_symmat_iso, make_symmat
 from aspyre.utils.matlab_compat import m_reshape
-from aspyre.cov3d.estimation import Estimator
-from aspyre.cov3d.estimation.mean import MeanEstimator
-from aspyre.cov3d.estimation.kernel import FourierKernel
+from aspyre.estimation import Estimator
+from aspyre.estimation.mean import MeanEstimator
+from aspyre.estimation.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ from aspyre.imaging.threed import rotated_grids
 from aspyre.nfft import anufft3
 from aspyre.utils import mdim_ifftshift
 from aspyre.utils.matlab_compat import m_reshape, m_flatten
-from aspyre.cov3d.estimation import Estimator
-from aspyre.cov3d.estimation.kernel import FourierKernel
+from aspyre.estimation import Estimator
+from aspyre.estimation.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
 

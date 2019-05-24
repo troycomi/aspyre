@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 from scipy.sparse.linalg import LinearOperator, cg
 from tqdm import tqdm
-from aspyre.cov3d.estimation.kernel import FourierKernel
+from aspyre.estimation.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
 

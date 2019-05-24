@@ -1,5 +1,5 @@
-[![Travis Build Status](https://travis-ci.com/vineetbansal/aspyre.svg?branch=master)](https://travis-ci.com/vineetbansal/aspyre)
-[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/bdq2dn0bi14iy992?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspyre-o47mb)
+[![Travis Build Status](https://travis-ci.org/vineetbansal/ASPyRE.svg?branch=master)](https://travis-ci.org/vineetbansal/ASPyRE)
+[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/hlotnubf7x015ipy/branch/master?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspyre/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/vineetbansal/aspyre/badge.svg?branch=master&service=github)](https://coveralls.io/github/vineetbansal/aspyre?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/aspyre/badge/?version=latest)](https://cov3d.readthedocs.io/en/latest/?badge=latest)
 
@@ -37,5 +37,9 @@ cd /path/to/git/clone/folder
 python setup.py install
 ```
 
-## Class Diagram
-![Class Diagram](docs/aspyre.png)
+## Development Guidelines
+
+ASPyRE follows [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+Please submit any PRs against the `develop` branch.
+
+![Gitflow Diagram](https://wac-cdn.atlassian.com/dam/jcr:61ccc620-5249-4338-be66-94d563f2843c/05%20(2).svg?cdnVersion=357)
