@@ -39,6 +39,9 @@ jobs:
 
   - bash: conda update -q conda
     displayName: Update conda
+
+  - bash: conda clean -t -y
+    displayName: Removing conda cached package tarballs.
     
   - bash: conda env create --name myEnvironment --file environment.yml
     displayName: Create Anaconda environment
