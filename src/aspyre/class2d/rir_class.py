@@ -1,9 +1,10 @@
+from aspyre.class2d import Class2D
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class RIR_Class2D(Class2D):
+class RIRClass2D(Class2D):
 
     def __init__(self, src):
         """

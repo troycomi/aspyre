@@ -1,9 +1,10 @@
+from aspyre.class2d import Class2D
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class MRA_Class2D(Class2D):
+class MRAClass2D(Class2D):
 
     def __init__(self, src):
         """
