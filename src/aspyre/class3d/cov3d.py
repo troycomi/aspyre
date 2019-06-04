@@ -1,9 +1,10 @@
+from aspyre.class3d import Class3D
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class Class3D:
+class Cov3D(Class3D):
 
     def __init__(self, src):
         """

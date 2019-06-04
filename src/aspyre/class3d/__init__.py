@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Cov3D(Class3D):
+class Class3D:
 
     def __init__(self, src):
         """
