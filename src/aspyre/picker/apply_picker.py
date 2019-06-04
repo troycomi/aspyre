@@ -1,6 +1,8 @@
+from aspyre.picker import Picker
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class ApplePicker(Picker):
 
