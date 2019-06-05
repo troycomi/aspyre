@@ -1,10 +1,10 @@
 from unittest import TestCase
 import re
+from copy import deepcopy
 from tempfile import TemporaryDirectory
-from copy import copy
 
+from aspyre import config
 from aspyre.apple.apple import Apple
-from aspyre.apple.config import ApplePickerConfig
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data', 'mrc_files')
@@ -18,8 +18,7 @@ class ApplePickerTestCase(TestCase):
         pass
 
     def testPickCenters(self):
-        config = copy(ApplePickerConfig)
-        config.particle_size = 78
+        config.apple.particle_size = 78
 
         # 504 particles with the following centers
         centers = {
@@ -530,20 +529,19 @@ class ApplePickerTestCase(TestCase):
         }
 
         with TemporaryDirectory() as temp_dir:
-            config.output_dir = temp_dir
-            apple_picker = Apple(config, DATA_DIR)
-            apple_picker.pick_particles()
 
-            starfile_path = os.path.join(temp_dir, 'falcon_2012_06_12-14_33_35_0_applepick.star')
-            self.assertTrue(os.path.exists(starfile_path))
+            apple_picker = Apple(DATA_DIR)
+            apple_picker.output_dir = temp_dir
 
-            for line in open(starfile_path, 'r').readlines():
-                if re.match(r'^[1-9]', line):
-                    _x, _y = (int(t) for t in line.rstrip('\n').split())
-                    if (_x, _y) not in centers:
-                        self.fail('({}, {}) not an expected center.'.format(_x, _y))
-                    else:
-                        centers.remove((_x, _y))
+            centers_found = apple_picker.process_micrograph('falcon_2012_06_12-14_33_35_0.mrc')
+            for center_found in centers_found:
+                _x, _y = tuple(center_found)
+                if (_x, _y) not in centers:
+                    self.fail('({}, {}) not an expected center.'.format(_x, _y))
+                else:
+                    centers.remove((_x, _y))
 
             if centers:
                 self.fail('Not all expected centers were found!')
+
+

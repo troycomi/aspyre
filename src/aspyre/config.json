@@ -31,6 +31,20 @@
         "cg_tol": 1e-5
     },
 
+    "apple": {
+        "particle_size": 78,
+        "query_image_size": 52,
+        "max_particle_size": 156,
+        "min_particle_size": 19,
+        "minimum_overlap_amount": 7,
+        "tau1": 710,
+        "tau2": 7100,
+        "container_size": 450,
+        "proc": 1,
+        "output_dir": null,
+        "create_jpg": 0
+    },
+
     "nfft_backends": [
         "finufft",
         "pynfft"

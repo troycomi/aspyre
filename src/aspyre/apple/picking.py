@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 20 12:21:28 2018
-
-@author: Ayelet Heimowitz, Itay Sason, Joakim Andén, Robbie Brook
-"""
 import os
 
 import mrcfile
