@@ -4,7 +4,7 @@ Aspyre documentation
 A detailed description of the project goes here.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Modules:
 
    modules

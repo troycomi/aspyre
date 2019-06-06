@@ -8,7 +8,8 @@ dependencies:
   - numpy=1.14.2
   - numpydoc=0.7.0
   - python=3.6
-  - sphinxcontrib-bibtex=0.4.0
+
   - pip:
     - importlib_resources>=1.0.2
     - sphinx-rtd-theme==0.4.2
+    - sphinxcontrib-bibtex
