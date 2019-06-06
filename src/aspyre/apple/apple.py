@@ -1,40 +1,33 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 19 09:40:13 2018
-
-@author: Ayelet Heimowitz, Itay Sason, Joakim Andén, Robbie Brook
-"""
-
+import logging
 import glob
 import os
-
-import numpy as np  # pylint: disable=wrong-import-order
-
-from multiprocessing import Pool
-from functools import partial
+import numpy as np
+from concurrent import futures
+from tqdm import tqdm
 
 from aspyre.apple.exceptions import ConfigError
 from aspyre.apple.picking import Picker
-from aspyre.apple.config import ApplePickerConfig
+from aspyre import config
+
+logger = logging.getLogger(__name__)
 
 
 class Apple:
     """ This class is the layer between the user and the picking algorithm. """
 
-    def __init__(self, config, mrc_dir):
+    def __init__(self, mrc_dir):
 
-        self.particle_size = config.particle_size
-        self.query_image_size = config.query_image_size
-        self.max_particle_size = config.max_particle_size
-        self.min_particle_size = config.min_particle_size
-        self.minimum_overlap_amount = config.minimum_overlap_amount
-        self.tau1 = config.tau1
-        self.tau2 = config.tau2
-        self.container_size = config.container_size
-        self.proc = config.proc
-        self.output_dir = config.output_dir
-        self.create_jpg = config.create_jpg
+        self.particle_size = config.apple.particle_size
+        self.query_image_size = config.apple.query_image_size
+        self.max_particle_size = config.apple.max_particle_size
+        self.min_particle_size = config.apple.min_particle_size
+        self.minimum_overlap_amount = config.apple.minimum_overlap_amount
+        self.tau1 = config.apple.tau1
+        self.tau2 = config.apple.tau2
+        self.container_size = config.apple.container_size
+        self.proc = config.apple.proc
+        self.output_dir = config.apple.output_dir
+        self.create_jpg = config.apple.create_jpg
         self.mrc_dir = mrc_dir
 
         # set default values if needed
@@ -78,7 +71,7 @@ class Apple:
         except OSError:
             std_out_width = 100
 
-        print(' Parameter Report '.center(std_out_width, '=') + '\n')
+        logger.info(' Parameter Report '.center(std_out_width, '=') + '\n')
 
         params = ['particle_size',
                   'query_image_size',
@@ -92,9 +85,9 @@ class Apple:
                   'output_dir']
 
         for param in params:
-            print('%(param)-40s %(value)-10s' % {"param": param, "value": getattr(self, param)})
+            logger.info('%(param)-40s %(value)-10s' % {"param": param, "value": getattr(self, param)})
 
-        print('\n' + ' Progress Report '.center(std_out_width, '=') + '\n')
+        logger.info('\n' + ' Progress Report '.center(std_out_width, '=') + '\n')
 
     def verify_input_values(self):
         """Verify parameter values make sense.
@@ -145,47 +138,28 @@ class Apple:
             raise ConfigError("Error", "Please select at least one processor!")
 
     def pick_particles(self):
-        """ Initiate picking.
-        
-            Creates a pool of processes and initializes the process of particle
-            picking on each micrograph. A single process is used per micrograph. """
 
-        # fetch all mrc files from mrc folder
         filenames = [os.path.basename(file) for file in glob.glob('{}/*.mrc'.format(self.mrc_dir))]
-        print("converting {} mrc files..".format(len(filenames)))
+        logger.info("converting {} mrc files..".format(len(filenames)))
 
-        data = list()
-        data.append(self.mrc_dir)
-        data.append(self.particle_size)
-        data.append(self.max_particle_size)
-        data.append(self.min_particle_size)
-        data.append(self.query_image_size)
-        data.append(self.tau1)
-        data.append(self.tau2)
-        data.append(self.minimum_overlap_amount)
-        data.append(self.container_size)
-        data.append(self.output_dir)
-        data.append(1)
-        
-        Apple.process_micrograph(data, filenames[0])
-        
-        data[10] = 0
-        filenames.remove(filenames[0])
-        
-        pool = Pool(processes=self.proc)
-        partial_func = partial(Apple.process_micrograph, data)
-        pool.map(partial_func, filenames)
-        pool.terminate()
+        pbar = tqdm(total=len(filenames))
+        with futures.ProcessPoolExecutor(self.proc) as executor:
+            to_do = []
+            for filename in filenames:
+                future = executor.submit(self.process_micrograph, filename)
+                to_do.append(future)
 
-    @staticmethod
-    def process_micrograph(data, filename):
+            for _ in futures.as_completed(to_do):
+                pbar.update(1)
+        pbar.close()
+
+    def process_micrograph(self, filename):
         """Pick particles.
         
-        Implemets the APPLE picker algorithm (Heimowitz, Andén and Singer, 
+        Implements the APPLE picker algorithm (Heimowitz, Andén and Singer,
         "APPLE picker: Automatic particle picking, a low-effort cryo-EM framework").
         
         Args:
-            data: list of parameters needed for the APPLE picking process.
             filename: Name of micrograph for picking.
             
             Raises:
@@ -195,32 +169,24 @@ class Apple:
         if not filename.endswith('.mrc'):
             raise ConfigError("Input file doesn't seem to be an MRC format! ({})".format(filename))
 
-        input_dir = data[0]
-        p_size = data[1]
-        max_size = data[2]
-        min_size = data[3]
-        q_size = data[4]
-        tau1 = data[5]
-        tau2 = data[6]
-        moa = data[7]
-        c_size = data[8]
-        output_dir = data[9]
-        show_image = data[10]
-
         # add path to filename
-        filename = os.path.join(input_dir, filename)
+        filename = os.path.join(self.mrc_dir, filename)
 
-        picker = Picker(p_size, max_size, min_size, q_size, tau1, tau2, moa, c_size, filename,
-                        output_dir)
+        picker = Picker(self.particle_size, self.max_particle_size, self.min_particle_size, self.query_image_size,
+                        self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filename,
+                        self.output_dir)
 
         # update user
-        print('Processing {}..'.format(os.path.basename(filename)))
+        logger.info('Processing {}..'.format(os.path.basename(filename)))
 
         # return .mrc file as a float64 array
         micro_img = picker.read_mrc()  # return a micrograph as an numpy array
 
         # compute score for query images
         score = picker.query_score(micro_img)  # compute score using normalized cross-correlations
+
+        tau1 = self.tau1
+        tau2 = self.tau2
 
         while True:
             # train SVM classifier and classify all windows in micrograph
@@ -244,5 +210,7 @@ class Apple:
         # create output star file
         centers = picker.extract_particles(segmentation)
         
-        if show_image and ApplePickerConfig.create_jpg:
+        if config.apple.create_jpg:
             picker.display_picks(centers)
+
+        return centers
