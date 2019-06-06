@@ -19,7 +19,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../src'))
 import aspyre
 
 # -- General configuration ------------------------------------------------
@@ -115,7 +115,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Cov3Ddoc'
+htmlhelp_basename = 'aspyre'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -142,7 +142,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Cov3D.tex', 'Cov3D Documentation',
+    (master_doc, 'Aspyre.tex', 'Aspyre Documentation',
      'Vineet Bansal', 'manual'),
 ]
 
