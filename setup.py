@@ -5,7 +5,7 @@ setup(
     version='0.3.0',
 
     description='Algorithms for Single Particle Reconstruction',
-    url='https://github.com/vineetbansal/aspyre',
+    url='https://github.com/computationalcryoem/aspyre',
     author='Joakim Anden, Vineet Bansal, Junchao Xia',
     author_email='janden@flatironinstitute.org, vineetb@princeton.edu, junchao.xia@princeton.edu',
     license='MIT',
