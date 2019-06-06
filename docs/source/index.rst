@@ -1,5 +1,5 @@
-Cryo documentation
-===================
+Aspyre documentation
+====================
 
 A detailed description of the project goes here.
 

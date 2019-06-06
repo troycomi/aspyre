@@ -1,7 +1,7 @@
-cryo
-====
+aspyre
+======
 
 .. toctree::
    :maxdepth: 4
 
-   cryo
+   aspyre
