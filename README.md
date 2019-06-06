@@ -1,8 +1,8 @@
-[![Azure Build Status](https://dev.azure.com/vineetbansal0645/ASPyRE/_apis/build/status/vineetbansal.ASPyRE?branchName=master)](https://dev.azure.com/vineetbansal0645/ASPyRE/_build/latest?definitionId=1&branchName=master)
-[![Travis Build Status](https://travis-ci.org/vineetbansal/ASPyRE.svg?branch=master)](https://travis-ci.org/vineetbansal/ASPyRE)
-[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/hlotnubf7x015ipy/branch/master?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspyre/branch/master)
-[![Coverage Status](https://coveralls.io/repos/github/vineetbansal/ASPyRE/badge.svg?branch=master&service=github)](https://coveralls.io/github/vineetbansal/ASPyRE?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/aspyre/badge/?version=latest)](https://cov3d.readthedocs.io/en/latest/?badge=latest)
+[![Azure Build Status](https://dev.azure.com/vineetbansal0645/ASPyRE/_apis/build/status/computationalcryoem.aspyre?branchName=master)](https://dev.azure.com/vineetbansal0645/ASPyRE/_build/latest?definitionId=2&branchName=master)
+[![Travis Build Status](https://travis-ci.org/computationalcryoem/aspyre.svg?branch=master)](https://travis-ci.org/computationalcryoem/aspyre)
+[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/5yn93qobpptnw2dw/branch/master?svg=true)](https://ci.appveyor.com/project/vineetbansal/aspyre-mu8e3/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/computationalcryoem/aspyre/badge.svg?branch=master)](https://coveralls.io/github/computationalcryoem/aspyre?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/aspyre/badge/?version=latest)](https://aspyre.readthedocs.io/en/latest/?badge=latest)
 
 # ASPyRE
 
