@@ -1,18 +1,25 @@
 import os
+import logging
 
 import mrcfile
 import numpy as np
 import pyfftw
+from tqdm import tqdm
+from concurrent import futures
 
 from scipy import ndimage, misc, signal
 from scipy.ndimage import binary_fill_holes, binary_erosion, binary_dilation, center_of_mass
 from sklearn import svm, preprocessing
 
+from aspyre import config
 from aspyre.apple.helper import PickerHelper
+
+logger = logging.getLogger(__name__)
 
 
 class Picker:
     """ This class does the actual picking with help from PickerHelper class. """
+
     def __init__(self, particle_size, max_size, min_size, query_size, tau1, tau2, moa,
                  container_size, filename, output_directory):
 
@@ -45,7 +52,7 @@ class Picker:
         micro_img = micro_img.astype('float')
         micro_img = micro_img[99:-100, 99:-100]
         micro_img = micro_img[0: min(micro_img.shape[0], micro_img.shape[1]),
-                              0: min(micro_img.shape[0], micro_img.shape[1])]
+                    0: min(micro_img.shape[0], micro_img.shape[1])]
 
         micro_img = misc.imresize(micro_img, 0.5, mode='F', interp='cubic')
 
@@ -95,16 +102,33 @@ class Picker:
 
         conv_map = np.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
 
-        window_t = np.empty(query_box.shape, dtype=query_box.dtype)
-        cc = np.empty((query_box.shape[0], query_box.shape[1], query_box.shape[2],
-                       2*query_box.shape[3]-2), dtype=micro_img.dtype)
+        def _work(index):
+            window_t = np.empty(query_box.shape, dtype=query_box.dtype)
+            cc = np.empty((query_box.shape[0], query_box.shape[1], query_box.shape[2],
+                           2 * query_box.shape[3] - 2), dtype=micro_img.dtype)
 
-        fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
+            fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
 
-        for index in range(0, reference_box.shape[0]):
-            np.multiply(reference_box[index], query_box, out=window_t)
+            window_t = np.multiply(reference_box[index], query_box)
             fft_class(window_t, cc)
-            conv_map[index] = cc.real.max((2, 3)) - cc.real.mean((2, 3))
+            return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
+
+        n_works = reference_box.shape[0]
+        n_threads = config.apple.conv_map_nthreads
+        logger.info(f'Spawning {n_threads} threads..')
+
+        pbar = tqdm(total=n_works)
+        with futures.ThreadPoolExecutor(n_threads) as executor:
+            to_do = []
+            for i in range(n_works):
+                future = executor.submit(_work, i)
+                to_do.append(future)
+
+            for future in futures.as_completed(to_do):
+                i, res = future.result()
+                conv_map[i, :, :] = res
+                pbar.update(1)
+        pbar.close()
 
         conv_map = np.transpose(conv_map, (1, 2, 0))
 
