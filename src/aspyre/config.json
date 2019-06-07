@@ -16,7 +16,7 @@
             }
         },
         "loggers": {
-            "cryo": {
+            "aspyre": {
                 "level": "DEBUG",
                 "handlers": ["console"]
             }
@@ -42,7 +42,9 @@
         "container_size": 450,
         "proc": 1,
         "output_dir": null,
-        "create_jpg": 0
+        "create_jpg": 0,
+
+        "conv_map_nthreads": 16
     },
 
     "nfft_backends": [

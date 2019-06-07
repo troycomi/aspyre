@@ -1,20 +1,27 @@
 import os
+import logging
 
 import mrcfile
 import numpy as np
 import pyfftw
+from tqdm import tqdm
+from concurrent import futures
 
 from scipy import ndimage, misc, signal
 from scipy.ndimage import binary_fill_holes, binary_erosion, binary_dilation, center_of_mass
 from sklearn import svm, preprocessing
 
+from aspyre import config
 from aspyre.apple.helper import PickerHelper
+
+logger = logging.getLogger(__name__)
 
 
 class Picker:
     """ This class does the actual picking with help from PickerHelper class. """
+
     def __init__(self, particle_size, max_size, min_size, query_size, tau1, tau2, moa,
-                 container_size, filenames, output_directory):
+                 container_size, filename, output_directory):
 
         self.particle_size = int(particle_size / 2)
         self.max_size = int(max_size / 2)
@@ -25,27 +32,27 @@ class Picker:
         self.tau2 = tau2
         self.moa = int(moa / 2)
         self.container_size = int(container_size / 2)
-        self.filenames = filenames
+        self.filename = filename
         self.output_directory = output_directory
 
         self.query_size -= self.query_size % 2
 
     def read_mrc(self):
         """Gets and preprocesses micrograph.
-        
-        Reads the micrograph, applies binning and a low-pass filter.   
-        
+
+        Reads the micrograph, applies binning and a low-pass filter.
+
         Returns:
             Micrograph image.
         """
-        
-        with mrcfile.open(self.filenames, mode='r+', permissive=True) as mrc:
+
+        with mrcfile.open(self.filename, mode='r+', permissive=True) as mrc:
             micro_img = mrc.data
 
         micro_img = micro_img.astype('float')
         micro_img = micro_img[99:-100, 99:-100]
         micro_img = micro_img[0: min(micro_img.shape[0], micro_img.shape[1]),
-                              0: min(micro_img.shape[0], micro_img.shape[1])]
+                    0: min(micro_img.shape[0], micro_img.shape[1])]
 
         micro_img = misc.imresize(micro_img, 0.5, mode='F', interp='cubic')
 
@@ -57,13 +64,13 @@ class Picker:
 
     def query_score(self, micro_img):
         """Calculates score for each query image.
-        
-        Extracts query images and reference windows. Computes the cross-correlation between these 
+
+        Extracts query images and reference windows. Computes the cross-correlation between these
         windows, and applies a threshold to compute a score for each query image.
-        
+
         Args:
             micro_img: Micrograph image.
-            
+
         Returns:
             Matrix containing a score for each query image.
         """
@@ -95,16 +102,33 @@ class Picker:
 
         conv_map = np.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
 
-        window_t = np.empty(query_box.shape, dtype=query_box.dtype)
-        cc = np.empty((query_box.shape[0], query_box.shape[1], query_box.shape[2],
-                       2*query_box.shape[3]-2), dtype=micro_img.dtype)
+        def _work(index):
+            window_t = np.empty(query_box.shape, dtype=query_box.dtype)
+            cc = np.empty((query_box.shape[0], query_box.shape[1], query_box.shape[2],
+                           2 * query_box.shape[3] - 2), dtype=micro_img.dtype)
 
-        fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
+            fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
 
-        for index in range(0, reference_box.shape[0]):
-            np.multiply(reference_box[index], query_box, out=window_t)
+            window_t = np.multiply(reference_box[index], query_box)
             fft_class(window_t, cc)
-            conv_map[index] = cc.real.max((2, 3)) - cc.real.mean((2, 3))
+            return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
+
+        n_works = reference_box.shape[0]
+        n_threads = config.apple.conv_map_nthreads
+        logger.info(f'Spawning {n_threads} threads..')
+
+        pbar = tqdm(total=n_works)
+        with futures.ThreadPoolExecutor(n_threads) as executor:
+            to_do = []
+            for i in range(n_works):
+                future = executor.submit(_work, i)
+                to_do.append(future)
+
+            for future in futures.as_completed(to_do):
+                i, res = future.result()
+                conv_map[i, :, :] = res
+                pbar.update(1)
+        pbar.close()
 
         conv_map = np.transpose(conv_map, (1, 2, 0))
 
@@ -120,19 +144,19 @@ class Picker:
     def run_svm(self, micro_img, score):
         """
         Trains and uses an SVM classifier.
-        
-        Trains an SVM classifier to distinguish between noise and particle projections based on 
-        mean intensity and variance. Every possible window in the micrograph is then classified 
+
+        Trains an SVM classifier to distinguish between noise and particle projections based on
+        mean intensity and variance. Every possible window in the micrograph is then classified
         as either noise or particle, resulting in a segmentation of the micrograph.
-        
+
         Args:
             micro_img: Micrograph image.
             score: Matrix containing a score for each query image.
-            
+
         Returns:
             Segmentation of the micrograph into noise and particle projections.
         """
-        
+
         particle_windows = np.floor(self.tau1)
         non_noise_windows = np.ceil(self.tau2)
         bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img,
@@ -170,14 +194,14 @@ class Picker:
     def morphology_ops(self, segmentation):
         """
         Discards suspected artifacts from segmentation.
-        
+
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
-            
+
         Returns:
             Segmentation of the micrograph into noise and particle projections.
         """
-        
+
         if (binary_fill_holes(segmentation) == np.ones(segmentation.shape)).all():
             segmentation[0:100, 0:100] = np.zeros((100, 100))
 
@@ -212,9 +236,9 @@ class Picker:
 
     def extract_particles(self, segmentation):
         """
-        Saves particle centers into output .star file, afetr dismissing regions 
+        Saves particle centers into output .star file, afetr dismissing regions
         that are too big to contain a particle.
-        
+
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
         """
@@ -268,20 +292,20 @@ class Picker:
         center[:, 1] = center[:, 0]
         center[:, 0] = col_2[:]
 
-        basename = os.path.basename(self.filenames)
+        basename = os.path.basename(self.filename)
         name_str, ext = os.path.splitext(basename)
 
         applepick_path = os.path.join(self.output_directory, "{}_applepick.star".format(name_str))
         with open(applepick_path, "w") as f:
             np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
             np.savetxt(f, center, fmt='%d %d')
-            
+
         return center
 
     def get_maps(self, score, micro_img, particle_windows, non_noise_windows):
         """
         Gets maps of regions from which to extract particle training for the SVM classifier.
-        
+
         Args:
             score: Matrix containing a score for each query image.
             micro_img: Micrograph image.
@@ -318,10 +342,10 @@ class Picker:
                 end_row_idx[j] - begin_row_idx[j], end_col_idx[j] - begin_col_idx[j])
 
         return bw_mask_p, bw_mask_n
-    
+
     def display_picks(self, centers):
 
-        with mrcfile.open(self.filenames, mode='r') as mrc:
+        with mrcfile.open(self.filename, mode='r') as mrc:
             micro_img = mrc.data
 
         micro_img = np.double(micro_img)
@@ -337,5 +361,6 @@ class Picker:
             picks[y-d:y+d, x+d:x+d+5] = 0
 
         out_img = np.multiply(micro_img, picks)
-        image_path = os.path.join(self.output_directory, "sample_result.jpg")
+        image_filename = os.path.splitext(os.path.basename(self.filename))[0] + '_result.jpg'
+        image_path = os.path.join(self.output_directory, image_filename)
         misc.imsave(image_path, out_img)

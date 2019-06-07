@@ -1,10 +1,10 @@
 import argparse
 
-from cryo.source.star import Starfile
-from cryo.basis.fb_basis_3d import FBBasis3D
-from cryo.cov3d.estimation.mean import MeanEstimator
-from cryo.cov3d.estimation.covar import CovarianceEstimator
-from cryo.cov3d.estimation.noise import WhiteNoiseEstimator
+from aspyre.source.star import Starfile
+from aspyre.basis.fb_3d import FBBasis3D
+from aspyre.estimation.mean import MeanEstimator
+from aspyre.estimation.covar import CovarianceEstimator
+from aspyre.estimation.noise import WhiteNoiseEstimator
 
 
 def parse_args():
