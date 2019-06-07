@@ -210,7 +210,7 @@ class Apple:
         # create output star file
         centers = picker.extract_particles(segmentation)
         
-        if config.apple.create_jpg:
+        if self.create_jpg:
             picker.display_picks(centers)
 
         return centers
