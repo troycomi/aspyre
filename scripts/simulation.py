@@ -2,15 +2,15 @@ import numpy as np
 from scipy.cluster.vq import kmeans2
 import argparse
 
-from cryo.source import SourceFilter
-from cryo.source.simulation import Simulation
-from cryo.basis.fb_basis_3d import FBBasis3D
-from cryo.imaging.filters import RadialCTFFilter
-from cryo.cov3d.estimation.noise import WhiteNoiseEstimator
-from cryo.cov3d.estimation.mean import MeanEstimator
-from cryo.cov3d.estimation.covar import CovarianceEstimator
-from cryo.utils import src_wiener_coords, Random
-from cryo.utils.mdim import eigs
+from aspyre.source import SourceFilter
+from aspyre.source.simulation import Simulation
+from aspyre.basis.fb_3d import FBBasis3D
+from aspyre.imaging.filters import RadialCTFFilter
+from aspyre.estimation.noise import WhiteNoiseEstimator
+from aspyre.estimation.mean import MeanEstimator
+from aspyre.estimation.covar import CovarianceEstimator
+from aspyre.utils import src_wiener_coords, Random
+from aspyre.utils.mdim import eigs
 
 
 def parse_args():

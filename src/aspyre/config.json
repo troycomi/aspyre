@@ -16,7 +16,7 @@
             }
         },
         "loggers": {
-            "cryo": {
+            "aspyre": {
                 "level": "DEBUG",
                 "handlers": ["console"]
             }
