@@ -4,12 +4,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Cov2DCTF(RotCov2D):
     """
     Define a derived class for denoising 2D images using CTF and Wiener Cov2D method
     """
 
-    def get_mean_ctf(self, coeffs=None, ctf_fb, ctf_idx):
+    def get_mean_ctf(self, coeffs, ctf_fb, ctf_idx):
         """
         Calculate the mean vector from the expansion coefficient.
         param b_coeffs: A coefficient vector (or an array of coefficient vectors) to be evaluated.
@@ -17,7 +18,7 @@ class Cov2DCTF(RotCov2D):
         """
         pass
 
-    def get_covar_ctf(self, coeffs=None, ctf_fb, ctf_idx, mean_coeff=None, noise_var, covar_est_opt=None):
+    def get_covar_ctf(self, coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var, covar_est_opt=None):
         """
         Calculate the covariance matrix from the expansion coefficients with CTF correction.
         param mean_coeff: The mean vector calculated from the `b_coeff`.
@@ -27,7 +28,6 @@ class Cov2DCTF(RotCov2D):
 
         """
         pass
-
 
     def _shrink(self, covar_b_coeff, noise_variance, method=None):
         """
@@ -39,10 +39,8 @@ class Cov2DCTF(RotCov2D):
         """
         pass
 
-
     def conj_grad(self, b_coeff):
         pass
-
 
     def get_wiener_ctf(self, coeffs, filter_fb, filter_idx,mean_coeff, covar_coeff, noise_var):
         pass
