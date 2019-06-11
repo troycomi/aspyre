@@ -1,31 +1,23 @@
-name: 'aspyre'
+name: 'aspyre2'
 
 channels:
   - defaults
-  - conda-forge
 
 dependencies:
-  - cython=0.26.1
+  - cython
   - fftw
-  - make
-  - numpy=1.14.2
-  - numpydoc=0.7.0
   - pandas>=0.23.4
   - pip
-  - pybind11
   - pytest
   - python=3.6
-  - scikit-image=0.14.0
+  - scikit-image
   - scikit-learn
   - scipy=0.19.1
-  - wheel
   - pip:
-    - coveralls
-    - finufftpy
     - importlib_resources>=1.0.2
     - mrcfile
+    - numpy==1.16.1
     - pyfftw
-    - pytest-cov
-    - sphinxcontrib-bibtex
-    - sphinx-rtd-theme==0.4.2
     - tqdm
+    - finufftpy-1.1.1-cp36-cp36m-linux_ppc64le.whl
+
