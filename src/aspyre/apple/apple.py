@@ -37,7 +37,7 @@ class Apple:
         if self.query_image_size is None:
             query_window_size = np.round(self.particle_size * 2 / 3)
             query_window_size -= query_window_size % 4
-            query_window_size =https://github.com/ComputationalCryoEM/aspyre.git int(query_window_size)
+            query_window_size = int(query_window_size)
     
             self.query_image_size = query_window_size
 
@@ -62,7 +62,7 @@ class Apple:
 
         if self.tau2 is None:
             self.tau2 = int(q_box * 30 / 100)
-https://github.com/ComputationalCryoEM/aspyre.git
+
         self.verify_input_values()
         self.print_values()
 
