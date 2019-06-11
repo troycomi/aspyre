@@ -1,5 +1,6 @@
 import argparse
 
+from aspyre import config
 from aspyre.source.star import Starfile
 from aspyre.basis.fb_3d import FBBasis3D
 from aspyre.estimation.mean import MeanEstimator
@@ -14,6 +15,7 @@ def parse_args():
     parser.add_argument('--ignore_missing_files', action='store_true')
     parser.add_argument('--max_rows', default=None, type=int)
     parser.add_argument('-L', default=16, type=int)
+    parser.add_argument('--cg_tol', default=None, type=float)
 
     return parser.parse_args()
 
@@ -43,4 +45,10 @@ if __name__ == '__main__':
 
     # Passing in a mean_kernel argument to the following constructor speeds up some calculations
     covar_estimator = CovarianceEstimator(source, basis, mean_kernel=mean_estimator.kernel)
-    covar_est = covar_estimator.estimate(mean_est, noise_variance)
+
+    override_dict = {}
+    if opts.cg_tol is not None:
+        override_dict['covar.cg_tol'] = opts.cg_tol
+
+    with config.override(override_dict):
+        covar_est = covar_estimator.estimate(mean_est, noise_variance)

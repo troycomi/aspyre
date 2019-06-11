@@ -17,7 +17,7 @@ dependencies:
   - python=3.6
   - scikit-image=0.14.0
   - scikit-learn
-  - scipy>=1.2.0  # To eliminate apple.scipy_signaling_patch
+  - scipy=0.19.1
   - wheel
   - pip:
     - coveralls
