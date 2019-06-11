@@ -188,9 +188,6 @@ class Apple:
         # compute score for query images
         score = picker.query_score(micro_img)  # compute score using normalized cross-correlations
 
-        tau1 = self.tau1
-        tau2 = self.tau2
-
         while True:
             # train SVM classifier and classify all windows in micrograph
             segmentation = picker.run_svm(micro_img, score)
@@ -198,11 +195,11 @@ class Apple:
             # If all windows are classified identically, update tau_1 or tau_2
             if np.array_equal(segmentation,
                               np.ones((segmentation.shape[0], segmentation.shape[1]))):
-                tau2 = tau2 + 500
+                picker.tau2 += 500
 
             elif np.array_equal(segmentation,
                                 np.zeros((segmentation.shape[0], segmentation.shape[1]))):
-                tau1 = tau1 + 500
+                picker.tau1 += 500
 
             else:
                 break
