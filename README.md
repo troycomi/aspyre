@@ -28,7 +28,13 @@ cd /path/to/git/clone/folder
 python setup.py test
 ```
 
-Tests currently take around 5 minutes to run. If some tests fail, you may realize that `python setup.py test` produces too much information. Re-running tests using `py.test tests` in `/path/to/git/clone/folder` may provide a cleaner output to analyze.
+Tests currently take around 5 minutes to run. If some tests fail, you may realize that `python setup.py test` produces too much information.
+You may want to re-run tests using:
+```
+cd /path/to/git/clone/folder
+PYTHONPATH=./src pytest tests
+```
+This provides a cleaner output to analyze.
 
 ## Install
 

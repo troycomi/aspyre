@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class Apple:
-    """ This class is the layer between the user and the picking algorithm. """
+    """
+    APPLE Particle Picker Class for a micrograph
+    :cite:`DBLP:journals/corr/abs-1802-00469`
+    """
 
     def __init__(self, mrc_dir):
 
