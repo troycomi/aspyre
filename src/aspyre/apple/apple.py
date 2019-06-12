@@ -193,14 +193,10 @@ class Apple:
             segmentation = picker.run_svm(micro_img, score)
 
             # If all windows are classified identically, update tau_1 or tau_2
-            if np.array_equal(segmentation,
-                              np.ones((segmentation.shape[0], segmentation.shape[1]))):
+            if np.all(segmentation):
                 picker.tau2 += 500
-
-            elif np.array_equal(segmentation,
-                                np.zeros((segmentation.shape[0], segmentation.shape[1]))):
+            elif not np.any(segmentation):
                 picker.tau1 += 500
-
             else:
                 break
 
