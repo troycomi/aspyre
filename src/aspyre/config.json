@@ -40,9 +40,7 @@
         "tau1": 710,
         "tau2": 7100,
         "container_size": 450,
-        "proc": 1,
-        "output_dir": null,
-        "create_jpg": 0,
+        "nprocesses": 1,
 
         "conv_map_nthreads": 16
     },

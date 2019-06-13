@@ -343,7 +343,7 @@ class Picker:
 
         return bw_mask_p, bw_mask_n
 
-    def display_picks(self, centers):
+    def create_jpg(self, centers):
 
         with mrcfile.open(self.filename, mode='r') as mrc:
             micro_img = mrc.data

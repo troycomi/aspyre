@@ -18,7 +18,7 @@ class Apple:
     :cite:`DBLP:journals/corr/abs-1802-00469`
     """
 
-    def __init__(self, mrc_dir):
+    def __init__(self, mrc_dir, output_dir, create_jpg=False):
 
         self.particle_size = config.apple.particle_size
         self.query_image_size = config.apple.query_image_size
@@ -28,9 +28,9 @@ class Apple:
         self.tau1 = config.apple.tau1
         self.tau2 = config.apple.tau2
         self.container_size = config.apple.container_size
-        self.proc = config.apple.proc
-        self.output_dir = config.apple.output_dir
-        self.create_jpg = config.apple.create_jpg
+        self.proc = config.apple.nprocesses
+        self.output_dir = output_dir
+        self.create_jpg = create_jpg
         self.mrc_dir = mrc_dir
 
         # set default values if needed
@@ -50,12 +50,6 @@ class Apple:
         if self.minimum_overlap_amount is None:
             self.minimum_overlap_amount = int(self.particle_size / 10)
 
-        if self.output_dir is None:
-            abs_path = os.path.abspath(self.mrc_dir)
-            self.output_dir = os.path.join(os.path.dirname(abs_path), 'star_dir')
-            if not os.path.exists(self.output_dir):
-                os.makedirs(self.output_dir)
-
         q_box = (4000 ** 2) / (self.query_image_size ** 2) * 4
         if self.tau1 is None:
             self.tau1 = int(q_box * 3 / 100)
@@ -63,34 +57,10 @@ class Apple:
         if self.tau2 is None:
             self.tau2 = int(q_box * 30 / 100)
 
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
         self.verify_input_values()
-        self.print_values()
-
-    def print_values(self):
-        """Printing all parameters to screen."""
-
-        try:
-            std_out_width = os.get_terminal_size().columns
-        except OSError:
-            std_out_width = 100
-
-        logger.info(' Parameter Report '.center(std_out_width, '=') + '\n')
-
-        params = ['particle_size',
-                  'query_image_size',
-                  'max_particle_size',
-                  'min_particle_size',
-                  'minimum_overlap_amount',
-                  'tau1',
-                  'tau2',
-                  'container_size',
-                  'proc',
-                  'output_dir']
-
-        for param in params:
-            logger.info('%(param)-40s %(value)-10s' % {"param": param, "value": getattr(self, param)})
-
-        logger.info('\n' + ' Progress Report '.center(std_out_width, '=') + '\n')
 
     def verify_input_values(self):
         """Verify parameter values make sense.
@@ -207,6 +177,6 @@ class Apple:
         centers = picker.extract_particles(segmentation)
         
         if self.create_jpg:
-            picker.display_picks(centers)
+            picker.create_jpg(centers)
 
         return centers
