@@ -5,19 +5,14 @@ import numpy as np
 from concurrent import futures
 from tqdm import tqdm
 
-from aspyre.apple.exceptions import ConfigError
 from aspyre.apple.picking import Picker
 from aspyre import config
+from aspyre.utils import ensure
 
 logger = logging.getLogger(__name__)
 
 
 class Apple:
-    """
-    APPLE Particle Picker Class for a micrograph
-    :cite:`DBLP:journals/corr/abs-1802-00469`
-    """
-
     def __init__(self, mrc_dir, output_dir, create_jpg=False):
 
         self.particle_size = config.apple.particle_size
@@ -63,52 +58,25 @@ class Apple:
         self.verify_input_values()
 
     def verify_input_values(self):
-        """Verify parameter values make sense.
-        
-        Sanity check for the attributes of this instance of the Apple class.
-        
-        Raises:
-            ConfigError: Attribute is out of range.
-        """
-        
-        if not 1 <= self.max_particle_size <= 3000:
-            raise ConfigError("Error", "Max particle size must be in range [1, 3000]!")
-
-        if not 1 <= self.query_image_size <= 3000:
-            raise ConfigError("Error", "Query image size must be in range [1, 3000]!")
-
-        if not 5 <= self.particle_size < 3000:
-            raise ConfigError("Error", "Particle size must be in range [5, 3000]!")
-
-        if not 1 <= self.min_particle_size < 3000:
-            raise ConfigError("Error", "Min particle size must be in range [1, 3000]!")
+        ensure(1 <= self.max_particle_size <= 3000, "Max particle size must be in range [1, 3000]!")
+        ensure(1 <= self.query_image_size <= 3000, "Query image size must be in range [1, 3000]!")
+        ensure(5 <= self.particle_size < 3000, "Particle size must be in range [5, 3000]!")
+        ensure(1 <= self.min_particle_size < 3000, "Min particle size must be in range [1, 3000]!")
 
         max_tau1_value = (4000 / self.query_image_size * 2) ** 2
-        if not 0 <= self.tau1 <= max_tau1_value:
-            raise ConfigError("Error",
-                              "\u03C4\u2081 must be a in range [0, {}]!".format(max_tau1_value))
+        ensure(0 <= self.tau1 <= max_tau1_value, f"tau1 must be a in range [0, {max_tau1_value}]!")
 
         max_tau2_value = (4000 / self.query_image_size * 2) ** 2
-        if not 0 <= self.tau2 <= max_tau2_value:
-            raise ConfigError("Error",
-                              "\u03C4\u2082 must be in range [0, {}]!".format(max_tau2_value))
+        ensure(0 <= self.tau2 <= max_tau2_value, f"tau2 must be in range [0, {max_tau2_value}]!")
 
-        if not 0 <= self.minimum_overlap_amount <= 3000:
-            raise ConfigError("Error", "overlap must be in range [0, 3000]!")
+        ensure(0 <= self.minimum_overlap_amount <= 3000, "overlap must be in range [0, 3000]!")
 
         # max container_size condition is (conainter_size_max * 2 + 200 > 4000), which is 1900
-        if not self.particle_size <= self.container_size <= 1900:
-            raise ConfigError("Error", "Container size must be within range [{}, 1900]!".format(
-                self.particle_size))
+        ensure(self.particle_size <= self.container_size <= 1900,
+               f"Container size must be within range [{self.particle_size}, 1900]!")
 
-        if self.particle_size < self.query_image_size:
-            raise ConfigError("Error",
-                              "Particle size must exceed query image size! particle size:{}, "
-                              "query image size: {}".format(self.particle_size,
-                                                            self.query_image_size))
-
-        if self.proc < 1:
-            raise ConfigError("Error", "Please select at least one processor!")
+        ensure(self.particle_size >= self.query_image_size,
+               f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!")
 
     def pick_particles(self):
 
@@ -127,20 +95,7 @@ class Apple:
         pbar.close()
 
     def process_micrograph(self, filename):
-        """Pick particles.
-        
-        Implements the APPLE picker algorithm (Heimowitz, Andén and Singer,
-        "APPLE picker: Automatic particle picking, a low-effort cryo-EM framework").
-        
-        Args:
-            filename: Name of micrograph for picking.
-            
-            Raises:
-                ConfigError: Incorrect format for micrograph file.
-        """
-
-        if not filename.endswith('.mrc'):
-            raise ConfigError("Input file doesn't seem to be an MRC format! ({})".format(filename))
+        ensure(filename.endswith('.mrc'), f"Input file doesn't seem to be an MRC format! ({filename})")
 
         # add path to filename
         filename = os.path.join(self.mrc_dir, filename)
@@ -149,7 +104,6 @@ class Apple:
                         self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filename,
                         self.output_dir)
 
-        # update user
         logger.info('Processing {}..'.format(os.path.basename(filename)))
 
         # return .mrc file as a float64 array

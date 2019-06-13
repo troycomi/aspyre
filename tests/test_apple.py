@@ -530,8 +530,7 @@ class ApplePickerTestCase(TestCase):
 
         with TemporaryDirectory() as temp_dir:
 
-            apple_picker = Apple(DATA_DIR)
-            apple_picker.output_dir = temp_dir
+            apple_picker = Apple(DATA_DIR, temp_dir)
 
             centers_found = apple_picker.process_micrograph('falcon_2012_06_12-14_33_35_0.mrc')
             for center_found in centers_found:

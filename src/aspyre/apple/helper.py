@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 21 11:25:48 2018
-
-@author: Ayelet Heimowitz, Itay Sason, Joakim Andén, Robbie Brook
-"""
-
 import numpy as np
 import pyfftw
 
