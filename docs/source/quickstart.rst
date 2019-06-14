@@ -8,7 +8,7 @@ To run these, make sure you have activated the proper conda environment for ASPy
 *******************
 
 The ``apple.py`` script takes in a folder of one or more ``*.mrc`` files, picks particles using the Apple-Picker algorithm described at
-:cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an folder location.
+:cite:`DBLP:journals/corr/abs-1802-00469`, and generates ``*.star`` files, one for each ``*.mrc`` file processed, at an output folder location.
 
 For example, to run the script on sample data included in ASPyRE (a single ``falcon_2012_06_12-14_33_35_0.mrc`` file provided from the 5.3 GB
 `Beta-galactosidase Falcon-II micrographs EMPIAR dataset <https://www.ebi.ac.uk/pdbe/emdb/empiar/entry/10017/>`_) and save results to a
@@ -18,7 +18,7 @@ For example, to run the script on sample data included in ASPyRE (a single ``fal
 
     cd scripts
     mkdir apple_output
-    python apple.py ../tests/saved_test_data/mrc_files particles
+    python apple.py ../tests/saved_test_data/mrc_files --output_dir particles
 
 Use the ``--help`` argument with the script and look for the several ``config.apple.*`` arguments that you can tweak for this script.
 
