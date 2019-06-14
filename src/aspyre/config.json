@@ -40,7 +40,7 @@
         "tau1": 710,
         "tau2": 7100,
         "container_size": 450,
-        "nprocesses": 1,
+        "n_threads": 8,
 
         "conv_map_nthreads": 16
     },

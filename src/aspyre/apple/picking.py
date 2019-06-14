@@ -115,9 +115,7 @@ class Picker:
 
         n_works = reference_box.shape[0]
         n_threads = config.apple.conv_map_nthreads
-        logger.info(f'Spawning {n_threads} threads..')
 
-        pbar = tqdm(total=n_works)
         with futures.ThreadPoolExecutor(n_threads) as executor:
             to_do = []
             for i in range(n_works):
@@ -127,8 +125,6 @@ class Picker:
             for future in futures.as_completed(to_do):
                 i, res = future.result()
                 conv_map[i, :, :] = res
-                pbar.update(1)
-        pbar.close()
 
         conv_map = np.transpose(conv_map, (1, 2, 0))
 
@@ -234,13 +230,14 @@ class Picker:
 
         return segmentation_e
 
-    def extract_particles(self, segmentation):
+    def extract_particles(self, segmentation, create_jpg=False):
         """
-        Saves particle centers into output .star file, afetr dismissing regions
+        Saves particle centers into output .star file, after dismissing regions
         that are too big to contain a particle.
 
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
+            create_jpg: whether to create jpg file of picked particles
         """
         segmentation = segmentation[self.query_size // 2 - 1:-self.query_size // 2,
                                     self.query_size // 2 - 1:-self.query_size // 2]
@@ -292,13 +289,17 @@ class Picker:
         center[:, 1] = center[:, 0]
         center[:, 0] = col_2[:]
 
-        basename = os.path.basename(self.filename)
-        name_str, ext = os.path.splitext(basename)
+        if self.output_directory is not None:
+            basename = os.path.basename(self.filename)
+            name_str, ext = os.path.splitext(basename)
 
-        applepick_path = os.path.join(self.output_directory, "{}_applepick.star".format(name_str))
-        with open(applepick_path, "w") as f:
-            np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
-            np.savetxt(f, center, fmt='%d %d')
+            applepick_path = os.path.join(self.output_directory, "{}_applepick.star".format(name_str))
+            with open(applepick_path, "w") as f:
+                np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
+                np.savetxt(f, center, fmt='%d %d')
+
+        if create_jpg:
+            self.create_jpg(center)
 
         return center
 
