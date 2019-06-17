@@ -1,7 +1,4 @@
 from unittest import TestCase
-import re
-from copy import deepcopy
-from tempfile import TemporaryDirectory
 
 from aspyre import config
 from aspyre.apple.apple import Apple
@@ -528,20 +525,17 @@ class ApplePickerTestCase(TestCase):
             (1283, 3919)
         }
 
-        with TemporaryDirectory() as temp_dir:
+        apple_picker = Apple(DATA_DIR)
 
-            apple_picker = Apple(DATA_DIR)
-            apple_picker.output_dir = temp_dir
+        centers_found = apple_picker.process_micrograph('falcon_2012_06_12-14_33_35_0.mrc')
+        for center_found in centers_found:
+            _x, _y = tuple(center_found)
+            if (_x, _y) not in centers:
+                self.fail('({}, {}) not an expected center.'.format(_x, _y))
+            else:
+                centers.remove((_x, _y))
 
-            centers_found = apple_picker.process_micrograph('falcon_2012_06_12-14_33_35_0.mrc')
-            for center_found in centers_found:
-                _x, _y = tuple(center_found)
-                if (_x, _y) not in centers:
-                    self.fail('({}, {}) not an expected center.'.format(_x, _y))
-                else:
-                    centers.remove((_x, _y))
-
-            if centers:
-                self.fail('Not all expected centers were found!')
+        if centers:
+            self.fail('Not all expected centers were found!')
 
 
