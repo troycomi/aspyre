@@ -18,7 +18,7 @@ For example, to run the script on sample data included in ASPyRE (a single ``fal
 
     cd scripts
     mkdir apple_output
-    python apple.py ../tests/saved_test_data/mrc_files --output_dir particles
+    python apple.py --mrc_file ../tests/saved_test_data/mrc_files/falcon_2012_06_12-14_33_35_0.mrc --output_dir particles
 
 Use the ``--help`` argument with the script and look for the several ``config.apple.*`` arguments that you can tweak for this script.
 
