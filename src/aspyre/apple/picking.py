@@ -116,13 +116,21 @@ class Picker:
         n_threads = config.apple.conv_map_nthreads
 
         pbar = tqdm(total=n_works, disable=not show_progress)
-        with futures.ThreadPoolExecutor(n_threads) as executor:
-            to_do = [executor.submit(_work, i) for i in range(n_works)]
+        if n_threads > 1:
 
-            for future in futures.as_completed(to_do):
-                i, res = future.result()
-                conv_map[i, :, :] = res
+            with futures.ThreadPoolExecutor(n_threads) as executor:
+                to_do = [executor.submit(_work, i) for i in range(n_works)]
+
+                for future in futures.as_completed(to_do):
+                    i, res = future.result()
+                    conv_map[i, :, :] = res
+                    pbar.update(1)
+        else:
+
+            for i in range(n_works):
+                _, conv_map[i, :, :] = _work(i)
                 pbar.update(1)
+
         pbar.close()
 
         conv_map = np.transpose(conv_map, (1, 2, 0))
