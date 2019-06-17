@@ -4,8 +4,8 @@ import logging
 import mrcfile
 import numpy as np
 import pyfftw
-from tqdm import tqdm
 from concurrent import futures
+from tqdm import tqdm
 
 from scipy import ndimage, misc, signal
 from scipy.ndimage import binary_fill_holes, binary_erosion, binary_dilation, center_of_mass
@@ -47,22 +47,31 @@ class Picker:
         """
 
         with mrcfile.open(self.filename, mode='r+', permissive=True) as mrc:
-            micro_img = mrc.data
+            im = mrc.data.astype('float')
 
-        micro_img = micro_img.astype('float')
-        micro_img = micro_img[99:-100, 99:-100]
-        micro_img = micro_img[0: min(micro_img.shape[0], micro_img.shape[1]),
-                    0: min(micro_img.shape[0], micro_img.shape[1])]
+        # Discard outer pixels
+        im = im[
+            config.apple.mrc.margin_top: -config.apple.mrc.margin_bottom,
+            config.apple.mrc.margin_left: -config.apple.mrc.margin_right
+        ]
 
-        micro_img = misc.imresize(micro_img, 0.5, mode='F', interp='cubic')
+        # Make square
+        side_length = min(im.shape)
+        im = im[:side_length, :side_length]
 
-        gauss_filter = PickerHelper.gaussian_filter(15, 0.5)
-        micro_img = signal.correlate(micro_img, gauss_filter, 'same')
+        im = misc.imresize(im, 1/config.apple.mrc.shrink_factor, mode='F', interp='cubic')
+        im = signal.correlate(
+            im,
+            PickerHelper.gaussian_filter(
+                config.apple.mrc.gauss_filter_size,
+                config.apple.mrc.gauss_filter_sigma
+            ),
+            'same'
+        )
 
-        micro_img = np.double(micro_img)
-        return micro_img
+        return im.astype('double')
 
-    def query_score(self, micro_img):
+    def query_score(self, micro_img, show_progress=True):
         """Calculates score for each query image.
 
         Extracts query images and reference windows. Computes the cross-correlation between these
@@ -70,6 +79,7 @@ class Picker:
 
         Args:
             micro_img: Micrograph image.
+            show_progress: Whether to show a progress bar
 
         Returns:
             Matrix containing a score for each query image.
@@ -77,36 +87,25 @@ class Picker:
 
         query_box = PickerHelper.extract_query(micro_img, int(self.query_size / 2))
 
-        out_shape = (query_box.shape[0],
-                     query_box.shape[1],
-                     query_box.shape[2],
-                     query_box.shape[3] // 2 + 1)
+        qbox_dim0, qbox_dim1, qbox_dim2, qbox_dim3 = query_box.shape
+        qbox_dim3 = qbox_dim3 // 2 + 1
 
-        query_box_a = np.empty(out_shape, dtype='complex128')
+        query_box_a = np.empty((qbox_dim0, qbox_dim1, qbox_dim2, qbox_dim3), dtype='complex128')
         fft_class_f = pyfftw.FFTW(query_box, query_box_a, axes=(2, 3), direction='FFTW_FORWARD')
         fft_class_f(query_box, query_box_a)
         query_box = np.conj(query_box_a)
 
-        reference_box_a = PickerHelper.extract_references(micro_img,
-                                                          self.query_size,
-                                                          self.container_size)
+        refs = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
 
-        out_shape2 = (reference_box_a.shape[0],
-                      reference_box_a.shape[1],
-                      reference_box_a.shape[-1] // 2 + 1)
-
-        reference_box = np.empty(out_shape2, dtype='complex128')
-        fft_class_f2 = pyfftw.FFTW(reference_box_a, reference_box,
-                                   axes=(1, 2), direction='FFTW_FORWARD')
-        fft_class_f2(reference_box_a, reference_box)
+        reference_box = np.empty((refs.shape[0], refs.shape[1], refs.shape[-1] // 2 + 1), dtype='complex128')
+        fft_class_f2 = pyfftw.FFTW(refs, reference_box, axes=(1, 2), direction='FFTW_FORWARD')
+        fft_class_f2(refs, reference_box)
 
         conv_map = np.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
 
         def _work(index):
             window_t = np.empty(query_box.shape, dtype=query_box.dtype)
-            cc = np.empty((query_box.shape[0], query_box.shape[1], query_box.shape[2],
-                           2 * query_box.shape[3] - 2), dtype=micro_img.dtype)
-
+            cc = np.empty((qbox_dim0, qbox_dim1, qbox_dim2, 2 * qbox_dim3 - 2), dtype=micro_img.dtype)
             fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
 
             window_t = np.multiply(reference_box[index], query_box)
@@ -116,26 +115,31 @@ class Picker:
         n_works = reference_box.shape[0]
         n_threads = config.apple.conv_map_nthreads
 
-        with futures.ThreadPoolExecutor(n_threads) as executor:
-            to_do = []
-            for i in range(n_works):
-                future = executor.submit(_work, i)
-                to_do.append(future)
+        pbar = tqdm(total=n_works, disable=not show_progress)
+        if n_threads > 1:
 
-            for future in futures.as_completed(to_do):
-                i, res = future.result()
-                conv_map[i, :, :] = res
+            with futures.ThreadPoolExecutor(n_threads) as executor:
+                to_do = [executor.submit(_work, i) for i in range(n_works)]
+
+                for future in futures.as_completed(to_do):
+                    i, res = future.result()
+                    conv_map[i, :, :] = res
+                    pbar.update(1)
+        else:
+
+            for i in range(n_works):
+                _, conv_map[i, :, :] = _work(i)
+                pbar.update(1)
+
+        pbar.close()
 
         conv_map = np.transpose(conv_map, (1, 2, 0))
 
         min_val = np.amin(conv_map)
         max_val = np.amax(conv_map)
-        thresh = min_val + (max_val - min_val) / 20
+        thresh = min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
 
-        h = conv_map >= thresh
-        score = np.sum(h, axis=2)
-
-        return score
+        return np.sum(conv_map >= thresh, axis=2)
 
     def run_svm(self, micro_img, score):
         """
@@ -155,16 +159,15 @@ class Picker:
 
         particle_windows = np.floor(self.tau1)
         non_noise_windows = np.ceil(self.tau2)
-        bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img,
-                                               particle_windows, non_noise_windows)
+        bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img, particle_windows, non_noise_windows)
 
         x, y = PickerHelper.get_training_set(micro_img, bw_mask_p, bw_mask_n, self.query_size)
 
         scaler = preprocessing.StandardScaler()
         scaler.fit(x)
         x = scaler.transform(x)
-        classify = svm.SVC(C=1, kernel='rbf', gamma=0.5, class_weight='balanced')
-        classify.fit(x, y)                                                  # train SVM classifier
+        classify = svm.SVC(C=1, kernel=config.apple.svm.kernel, gamma=config.apple.svm.gamma, class_weight='balanced')
+        classify.fit(x, y)
 
         mean_all, std_all = PickerHelper.moments(micro_img, self.query_size)
 
@@ -182,8 +185,8 @@ class Picker:
         # compute classification for all possible windows in micrograph
         segmentation = classify.predict(cls_input)
 
-        segmentation = np.reshape(segmentation, (
-            int(np.sqrt(segmentation.shape[0])), int(np.sqrt(segmentation.shape[0]))), 'F')
+        _segmentation_shape = int(np.sqrt(segmentation.shape[0]))
+        segmentation = np.reshape(segmentation, (_segmentation_shape, _segmentation_shape), 'F')
 
         return segmentation.copy()
 
@@ -281,13 +284,15 @@ class Picker:
         center = center + (self.query_size // 2 - 1) * np.ones(center.shape)
         center = center + (self.query_size // 2 - 1) * np.ones(center.shape)
         center = center + np.ones(center.shape)
-        center = 2 * center
-        center = center + 99 * np.ones(center.shape)
+
+        center = config.apple.mrc.shrink_factor * center
 
         # swap columns to align with Relion
-        col_2 = center[:, 1].copy()
-        center[:, 1] = center[:, 0]
-        center[:, 0] = col_2[:]
+        center = center[:, [1, 0]]
+
+        # first column is x; second column is y - offset by margins that were discarded from the image
+        center[:, 0] += config.apple.mrc.margin_left
+        center[:, 1] += config.apple.mrc.margin_top
 
         if self.output_directory is not None:
             basename = os.path.basename(self.filename)
@@ -345,12 +350,11 @@ class Picker:
         return bw_mask_p, bw_mask_n
 
     def create_jpg(self, centers):
-
         with mrcfile.open(self.filename, mode='r') as mrc:
             micro_img = mrc.data
 
         micro_img = np.double(micro_img)
-        micro_img = micro_img - np.amin(np.reshape(micro_img, (np.prod(micro_img.shape))))
+        micro_img = micro_img - np.amin(micro_img)
         picks = np.ones(micro_img.shape)
         for i in range(0, centers.shape[0]):
             y = int(centers[i, 1])
