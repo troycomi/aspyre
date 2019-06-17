@@ -11,5 +11,6 @@ if __name__ == '__main__':
     parser.add_argument("--create_jpg", action='store_true', help="save *.jpg files for picked particles.")
 
     with parser.parse_args() as args:
-        apple = Apple(args.mrc_dir, args.output_dir, args.create_jpg)
-        apple.pick_particles()
+        apple = Apple()
+        apple.process_folder(args.mrc_dir)
+

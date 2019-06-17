@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Apple:
-    def __init__(self, mrc_dir, output_dir=None, create_jpg=False):
+    def __init__(self, output_dir=None, create_jpg=False):
 
         self.particle_size = config.apple.particle_size
         self.query_image_size = config.apple.query_image_size
@@ -24,7 +24,6 @@ class Apple:
         self.n_threads = config.apple.n_threads
         self.output_dir = output_dir
         self.create_jpg = create_jpg
-        self.mrc_dir = mrc_dir
 
         if self.query_image_size is None:
             query_image_size = np.round(self.particle_size * 2 / 3)
@@ -63,41 +62,39 @@ class Apple:
         ensure(self.particle_size >= self.query_image_size,
                f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!")
 
-    def pick_particles(self):
+    def process_folder(self, folder):
 
-        filenames = [os.path.basename(file) for file in glob.glob('{}/*.mrc'.format(self.mrc_dir))]
+        filenames = glob.glob('{}/*.mrc'.format(folder))
         logger.info("converting {} mrc files..".format(len(filenames)))
 
         pbar = tqdm(total=len(filenames))
         with futures.ThreadPoolExecutor(self.n_threads) as executor:
             to_do = []
             for filename in filenames:
-                future = executor.submit(self.process_micrograph, filename, False)
+                future = executor.submit(self.process_micrograph, filename, False, False)
                 to_do.append(future)
 
             for _ in futures.as_completed(to_do):
                 pbar.update(1)
         pbar.close()
 
-    def process_micrograph(self, filename, return_centers=True):
-        ensure(filename.endswith('.mrc'), f"Input file doesn't seem to be an MRC format! ({filename})")
-
-        # add path to filename
-        filename = os.path.join(self.mrc_dir, filename)
+    def process_micrograph(self, filepath, return_centers=True, show_progress=True):
+        ensure(filepath.endswith('.mrc'), f"Input file doesn't seem to be an MRC format! ({filepath})")
 
         picker = Picker(self.particle_size, self.max_particle_size, self.min_particle_size, self.query_image_size,
-                        self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filename,
+                        self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filepath,
                         self.output_dir)
 
-        # return .mrc file as a float64 array
-        micro_img = picker.read_mrc()  # return a micrograph as an numpy array
+        logger.info('Reading MRC file')
+        im = picker.read_mrc()
 
-        # compute score for query images
-        score = picker.query_score(micro_img)  # compute score using normalized cross-correlations
+        logger.info('Computing scores for query images')
+        score = picker.query_score(im, show_progress=show_progress)  # compute score using normalized cross-correlations
 
         while True:
+            logger.info(f'Running svm with tau1={picker.tau1}, tau2={picker.tau2}')
             # train SVM classifier and classify all windows in micrograph
-            segmentation = picker.run_svm(micro_img, score)
+            segmentation = picker.run_svm(im, score)
 
             # If all windows are classified identically, update tau_1 or tau_2
             if np.all(segmentation):
@@ -107,10 +104,10 @@ class Apple:
             else:
                 break
 
-        # discard suspected artifacts
+        logger.info('Discarding suspected artifacts')
         segmentation = picker.morphology_ops(segmentation)
 
-        # get particle centers, saving as necessary
+        logger.info('Getting particle centers')
         centers = picker.extract_particles(segmentation, self.create_jpg)
 
         if return_centers:
