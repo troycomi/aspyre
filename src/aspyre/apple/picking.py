@@ -87,28 +87,17 @@ class Picker:
 
         query_box = PickerHelper.extract_query(micro_img, int(self.query_size / 2))
 
-        out_shape = (query_box.shape[0],
-                     query_box.shape[1],
-                     query_box.shape[2],
-                     query_box.shape[3] // 2 + 1)
-
+        out_shape = query_box.shape[0], query_box.shape[1], query_box.shape[2], query_box.shape[3] // 2 + 1
         query_box_a = np.empty(out_shape, dtype='complex128')
         fft_class_f = pyfftw.FFTW(query_box, query_box_a, axes=(2, 3), direction='FFTW_FORWARD')
         fft_class_f(query_box, query_box_a)
         query_box = np.conj(query_box_a)
 
-        reference_box_a = PickerHelper.extract_references(micro_img,
-                                                          self.query_size,
-                                                          self.container_size)
-
-        out_shape2 = (reference_box_a.shape[0],
-                      reference_box_a.shape[1],
-                      reference_box_a.shape[-1] // 2 + 1)
+        reference_box_a = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
+        out_shape2 = reference_box_a.shape[0], reference_box_a.shape[1], reference_box_a.shape[-1] // 2 + 1
 
         reference_box = np.empty(out_shape2, dtype='complex128')
-        fft_class_f2 = pyfftw.FFTW(reference_box_a, reference_box,
-                                   axes=(1, 2), direction='FFTW_FORWARD')
-
+        fft_class_f2 = pyfftw.FFTW(reference_box_a, reference_box, axes=(1, 2), direction='FFTW_FORWARD')
         fft_class_f2(reference_box_a, reference_box)
 
         conv_map = np.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
