@@ -1,8 +1,10 @@
 import os
 import numpy as np
 from scipy.cluster.vq import kmeans2
+import scipy.sparse.linalg
 
 from unittest import TestCase
+from unittest.mock import patch
 
 from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
@@ -40,8 +42,19 @@ class CovarianceTestCase(TestCase):
     def tearDown(self):
         pass
 
-    def testCovariance1(self):
+    @patch('scipy.sparse.linalg.cg')
+    def testCovariance1(self, cg):
+        cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
+        cg.return_value = cg_return_value, 0  # 0 = convergence success
+
         covar_est = self.covar_estimator.estimate(self.mean_est, self.noise_variance)
+
+        # Since we're only mocking a linear system solver, ensure that we did return the solution
+        # for the argument we got called with.
+        # 'call_args' is a tuple with the first member being the ordered arguments of the Mock call
+        # In our case (in order) - the LinearOperator and 'b' (the RHS of the linear system)
+        _, b = cg.call_args[0]
+        self.assertTrue(np.allclose(b, self.covar_estimator.apply_kernel(cg_return_value, packed=True), atol=1e-5))
 
         self.assertTrue(np.allclose(
             np.array([
@@ -58,7 +71,12 @@ class CovarianceTestCase(TestCase):
             atol=1e-4
         ))
 
-    def testCovariance2(self):
+    @patch('scipy.sparse.linalg.cg')
+    def testCovariance2(self, cg):
+        # Essentially the same as above, except that our estimator now has a preconditioner
+        cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
+        cg.return_value = cg_return_value, 0  # 0 = convergence success
+
         covar_est = self.covar_estimator_with_preconditioner.estimate(self.mean_est, self.noise_variance)
 
         self.assertTrue(np.allclose(

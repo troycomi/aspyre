@@ -1,9 +1,11 @@
 import logging
 import numpy as np
 from scipy.fftpack import fftn
-from scipy.sparse.linalg import LinearOperator, cg
+import scipy.sparse.linalg
+from scipy.sparse.linalg import LinearOperator
 from scipy.linalg import norm
 from tqdm import tqdm
+from functools import partial
 
 from aspyre import config
 from aspyre.imaging.threed import rotated_grids
@@ -98,44 +100,50 @@ class CovarianceEstimator(Estimator):
     def conj_grad(self, b_coeff):
         # TODO: Support regularizer when solving for volume covariance
 
-        def kernel_fun(covar_coeff):
-            return symmat_to_vec_iso(self.apply_kernel(vec_to_symmat_iso(covar_coeff), kernel=self.kernel))
-
-        def precond_fun(covar_coeff):
-            return symmat_to_vec_iso(self.apply_kernel(vec_to_symmat_iso(covar_coeff), kernel=self.precond_kernel))
-
         b_coeff = symmat_to_vec_iso(b_coeff)
         N = b_coeff.shape[0]
 
-        operator = LinearOperator((N, N), matvec=kernel_fun)
-        M = None if self.precond_kernel is None else LinearOperator((N, N), matvec=precond_fun)
+        operator = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=self.kernel, packed=True))
+        if self.precond_kernel is None:
+            M = None
+        else:
+            M = LinearOperator((N, N), matvec=partial(self.apply_kernel, kernel=self.precond_kernel, packed=True))
 
         tol = config.covar.cg_tol
         target_residual = tol * norm(b_coeff)
 
         def cb(xk):
-            logger.info(f'Delta {norm(b_coeff - kernel_fun(xk))} (target {target_residual})')
+            logger.info(f'Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})')
 
-        x, info = cg(operator, b_coeff, M=M, callback=cb, tol=tol)
+        x, info = scipy.sparse.linalg.cg(operator, b_coeff, M=M, callback=cb, tol=tol)
 
         if info != 0:
             raise RuntimeError('Unable to converge!')
         return vec_to_symmat_iso(x)
 
-    def apply_kernel(self, covar_coeff, kernel=None):
+    def apply_kernel(self, coeff, kernel=None, packed=False):
         """
         Applies the kernel represented by convolution
-        :param covar_coeff: The volume matrix (6 dimensions) to be convolved.
+        :param coeff: The volume matrix (6 dimensions) to be convolved (but see the `packed` argument below).
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
-        :return: The result of evaluating `covar_coeff` in the given basis, convolving with the kernel given by
-            kernel, and backprojecting into the basis.
+        :param packed: whether the `coeff` matrix represents an isometrically mapped packed vector,
+            through the `symmat_to_vec_iso` function. In this case, the function expands `coeff` into a symmetric
+            matrix internally, and returns a packed vector in return.
+        :return: The result of evaluating `coeff` in the given basis, convolving with the kernel given by
+            kernel, and backprojecting into the basis. If `packed` is True, then the isometrically mapped packed
+            vector is returned instead.
         """
         if kernel is None:
             kernel = self.kernel
-        covar = self.basis.mat_evaluate(covar_coeff)
-        covar = kernel.convolve_volume_matrix(covar)
-        covar_coeff = self.basis.mat_evaluate_t(covar)
-        return covar_coeff
+        if packed:
+            coeff = vec_to_symmat_iso(coeff)
+
+        result = self.basis.mat_evaluate_t(
+            kernel.convolve_volume_matrix(
+                self.basis.mat_evaluate(coeff)
+            )
+        )
+        return symmat_to_vec_iso(result) if packed else result
 
     def src_backward(self, mean_vol, noise_variance, shrink_method=None):
         """
