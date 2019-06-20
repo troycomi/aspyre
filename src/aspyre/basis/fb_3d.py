@@ -2,7 +2,8 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspyre.utils import roll_dim, unroll_dim, vol_to_vec, vec_to_vol, ensure
+from aspyre.utils import ensure
+from aspyre.utils.matrix import roll_dim, unroll_dim, vol_to_vec, vec_to_vol
 from aspyre.utils.matlab_compat import m_flatten, m_reshape
 from aspyre.basis.basis_func import unique_coords_nd, sph_bessel, real_sph_harmonic
 from aspyre.basis import Basis

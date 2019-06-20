@@ -5,8 +5,9 @@ from aspyre.imaging import im_filter, im_translate
 from aspyre.imaging.threed import im_backproject, vol_project
 from aspyre.imaging.filters import IdentityFilter, ScalarFilter
 from aspyre.estimation.noise import WhiteNoiseEstimator
-from aspyre.utils import ensure, randn, randi, grid_2d
-from aspyre.utils.matlab_compat import m_reshape
+from aspyre.utils import ensure
+from aspyre.utils.math import grid_2d
+from aspyre.utils.matlab_compat import m_reshape, randn, randi
 
 logger = logging.getLogger(__name__)
 

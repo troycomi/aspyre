@@ -1,7 +1,11 @@
 import numpy as np
 from scipy.fftpack import ifftshift, ifft2, fft2
 from scipy.interpolate import RegularGridInterpolator
-from aspyre.utils import ensure, grid_2d, centered_fft2, centered_ifft2, roll_dim, unroll_dim
+
+from aspyre.utils import ensure
+from aspyre.utils.math import grid_2d
+from aspyre.utils.fft import centered_fft2, centered_ifft2
+from aspyre.utils.matrix import roll_dim, unroll_dim
 
 
 # TODO: The following functions all need to move inside the Image class

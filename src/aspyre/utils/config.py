@@ -1,3 +1,8 @@
+"""
+Class and utility functions for a Config object driven from a .json file,
+with functionality to override values in blocks of code / scripts
+"""
+
 import functools
 from contextlib import contextmanager
 import logging.config

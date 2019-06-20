@@ -3,7 +3,8 @@ import numpy as np
 from scipy.special import jv
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspyre.utils import roll_dim, unroll_dim, im_to_vec, vec_to_im, ensure
+from aspyre.utils import ensure
+from aspyre.utils.matrix import roll_dim, unroll_dim, im_to_vec, vec_to_im
 from aspyre.utils.matlab_compat import m_flatten, m_reshape
 from aspyre.basis.basis_func import unique_coords_nd
 from aspyre.basis import Basis
