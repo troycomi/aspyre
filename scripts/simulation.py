@@ -9,8 +9,9 @@ from aspyre.imaging.filters import RadialCTFFilter
 from aspyre.estimation.noise import WhiteNoiseEstimator
 from aspyre.estimation.mean import MeanEstimator
 from aspyre.estimation.covar import CovarianceEstimator
-from aspyre.utils import src_wiener_coords, Random
-from aspyre.utils.mdim import eigs
+from aspyre.utils.matlab_compat import Random
+from aspyre.utils.matrix import eigs
+from aspyre.utils.misc import src_wiener_coords
 
 
 if __name__ == '__main__':

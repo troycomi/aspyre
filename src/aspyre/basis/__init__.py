@@ -2,7 +2,8 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, cg
 
-from aspyre.utils import mdim_mat_fun_conj, roll_dim, unroll_dim, ensure
+from aspyre.utils import ensure
+from aspyre.utils.matrix import mdim_mat_fun_conj, roll_dim, unroll_dim
 from aspyre.utils.matlab_compat import m_reshape
 from aspyre.basis.basis_func import num_besselj_zeros
 

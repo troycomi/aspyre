@@ -4,9 +4,11 @@ from scipy.linalg import qr, eigh
 from aspyre.source import ImageSource
 from aspyre.imaging import im_translate
 from aspyre.imaging.threed import vol_project
-from aspyre.utils import ensure, Random, grid_3d, rand, randi, randn, angles_to_rots, anorm, acorr, ainner, \
-    vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
-from aspyre.utils.matlab_compat import m_reshape
+from aspyre.utils import ensure
+from aspyre.utils.matlab_compat import Random, m_reshape
+from aspyre.utils.math import grid_3d, angles_to_rots
+from aspyre.utils.matlab_compat import rand, randi, randn
+from aspyre.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, vecmat_to_volmat, make_symmat
 
 
 class Simulation(ImageSource):

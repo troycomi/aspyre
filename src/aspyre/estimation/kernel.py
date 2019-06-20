@@ -2,8 +2,9 @@ import logging
 import numpy as np
 from scipy.fftpack import ifftn, fftn, fftshift, fft, ifft
 
-from aspyre.utils import mdim_fftshift, mdim_ifftshift, vol_to_vec, vec_to_vol, roll_dim, unroll_dim, vecmat_to_volmat, \
-    ensure
+from aspyre.utils import ensure
+from aspyre.utils.fft import mdim_fftshift, mdim_ifftshift
+from aspyre.utils.matrix import vol_to_vec, vec_to_vol, roll_dim, unroll_dim, vecmat_to_volmat
 from aspyre.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)

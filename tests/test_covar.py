@@ -1,8 +1,10 @@
 import os
 import numpy as np
 from scipy.cluster.vq import kmeans2
+import scipy.sparse.linalg
 
 from unittest import TestCase
+from unittest.mock import patch
 
 from aspyre.source import SourceFilter
 from aspyre.source.simulation import Simulation
@@ -10,16 +12,18 @@ from aspyre.basis.fb_3d import FBBasis3D
 from aspyre.imaging.filters import RadialCTFFilter
 from aspyre.estimation.mean import MeanEstimator
 from aspyre.estimation.covar import CovarianceEstimator
-from aspyre.utils.mdim import eigs
-from aspyre.utils import src_wiener_coords, Random
+from aspyre.utils.matrix import eigs
+from aspyre.utils.misc import src_wiener_coords
+from aspyre.utils.matlab_compat import Random
 
 import os.path
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'saved_test_data')
 
 
 class CovarianceTestCase(TestCase):
-    def setUp(self):
-        self.sim = Simulation(
+    @classmethod
+    def setUpClass(cls):
+        cls.sim = Simulation(
             n=1024,
             filters=SourceFilter(
                 [RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
@@ -27,20 +31,31 @@ class CovarianceTestCase(TestCase):
             )
         )
         basis = FBBasis3D((8, 8, 8))
-        self.noise_variance = 0.0030762743633643615
+        cls.noise_variance = 0.0030762743633643615
 
-        self.mean_estimator = MeanEstimator(self.sim, basis)
-        self.mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
+        cls.mean_estimator = MeanEstimator(cls.sim, basis)
+        cls.mean_est = np.load(os.path.join(DATA_DIR, 'mean_8_8_8.npy'))
 
         # Passing in a mean_kernel argument to the following constructor speeds up some calculations
-        self.covar_estimator = CovarianceEstimator(self.sim, basis, mean_kernel=self.mean_estimator.kernel, preconditioner='none')
-        self.covar_estimator_with_preconditioner = CovarianceEstimator(self.sim, basis, mean_kernel=self.mean_estimator.kernel, preconditioner='circulant')
+        cls.covar_estimator = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='none')
+        cls.covar_estimator_with_preconditioner = CovarianceEstimator(cls.sim, basis, mean_kernel=cls.mean_estimator.kernel, preconditioner='circulant')
 
     def tearDown(self):
         pass
 
-    def testCovariance1(self):
+    @patch('scipy.sparse.linalg.cg')
+    def testCovariance1(self, cg):
+        cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
+        cg.return_value = cg_return_value, 0  # 0 = convergence success
+
         covar_est = self.covar_estimator.estimate(self.mean_est, self.noise_variance)
+
+        # Since we're only mocking a linear system solver, ensure that we did return the solution
+        # for the argument we got called with.
+        # 'call_args' is a tuple with the first member being the ordered arguments of the Mock call
+        # In our case (in order) - the LinearOperator and 'b' (the RHS of the linear system)
+        _, b = cg.call_args[0]
+        self.assertTrue(np.allclose(b, self.covar_estimator.apply_kernel(cg_return_value, packed=True), atol=1e-5))
 
         self.assertTrue(np.allclose(
             np.array([
@@ -57,7 +72,12 @@ class CovarianceTestCase(TestCase):
             atol=1e-4
         ))
 
-    def testCovariance2(self):
+    @patch('scipy.sparse.linalg.cg')
+    def testCovariance2(self, cg):
+        # Essentially the same as above, except that our estimator now has a preconditioner
+        cg_return_value = np.load(os.path.join(DATA_DIR, 'cg_return_value.npy'))
+        cg.return_value = cg_return_value, 0  # 0 = convergence success
+
         covar_est = self.covar_estimator_with_preconditioner.estimate(self.mean_est, self.noise_variance)
 
         self.assertTrue(np.allclose(
