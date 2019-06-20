@@ -245,7 +245,7 @@ class PickerHelper:
         filt_freq = np.empty(pad_img.shape, dtype='complex128')
         img_freq = np.empty(pad_img.shape, dtype='complex128')
 
-        fft_class = pyfftw.FFTW(filt.astype('complex128'), filt_freq,
+        fft_class = pyfftw.FFTW(np.empty_like(filt.astype('complex128')), filt_freq,
                                 axes=(0, 1), direction='FFTW_FORWARD')
 
         fft_class(filt, filt_freq)
@@ -255,7 +255,7 @@ class PickerHelper:
         np.multiply(img_freq, filt_freq, out=mean_freq)
 
         mean_all = np.empty(mean_freq.shape, dtype=mean_freq.dtype)
-        fft_class2 = pyfftw.FFTW(mean_freq, mean_all, axes=(0, 1), direction='FFTW_BACKWARD')
+        fft_class2 = pyfftw.FFTW(np.empty_like(mean_freq), mean_all, axes=(0, 1), direction='FFTW_BACKWARD')
         fft_class2(mean_freq, mean_all)
         mean_all = np.real(mean_all)
 

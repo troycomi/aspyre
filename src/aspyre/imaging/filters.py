@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from aspyre.utils import ensure, voltage_to_wavelength, grid_2d
+from aspyre.utils import ensure
+from aspyre.utils.em import voltage_to_wavelength
+from aspyre.utils.math import grid_2d
 from aspyre.utils.matlab_compat import m_reshape
 
 

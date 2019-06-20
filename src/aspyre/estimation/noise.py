@@ -1,7 +1,8 @@
 import logging
 import numpy as np
 
-from aspyre.utils import grid_2d, centered_fft2
+from aspyre.utils.math import grid_2d
+from aspyre.utils.fft import centered_fft2
 from aspyre.imaging.filters import ScalarFilter, ArrayFilter
 
 logger = logging.getLogger(__name__)
