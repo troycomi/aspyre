@@ -78,6 +78,7 @@ def sph_bessel(ell, r):
 
     return np.asscalar(j) if scalar else j
 
+
 def norm_assoc_legendre(j, m, x):
     """
     Evaluate the normalized associated Legendre polynomial
@@ -101,6 +102,7 @@ def norm_assoc_legendre(j, m, x):
         except RuntimeWarning:
             print('debug')
     return y
+
 
 def real_sph_harmonic(j, m, theta, phi):
     """
@@ -254,6 +256,7 @@ def unique_coords_nd(N, ndim):
         'mask': mask
     }
 
+
 def lgwt(ndeg, a, b):
     """
     Compute Legendre-Gauss quadrature
@@ -298,7 +301,7 @@ def lgwt(ndeg, a, b):
         L[:, 1] = y
 
         for k in range(1, N1):
-            L[:, k + 1] = ((2 * (k + 1) - 1) * y * L[:, k] - (k) * L[:, k - 1]) / (k + 1)
+            L[:, k + 1] = ((2 * (k + 1) - 1) * y * L[:, k] - k * L[:, k - 1]) / (k + 1)
 
         Lp = N2 * (L[:, N1 - 1] - y * L[:, N2 - 1]) / (1 - y ** 2)
 

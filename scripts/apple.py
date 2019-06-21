@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
     with parser.parse_args() as args:
 
-        apple = Apple()
+        apple = Apple(args.output_dir)
         if args.mrc_dir:
-            apple.process_folder(args.mrc_dir)
+            apple.process_folder(args.mrc_dir, create_jpg=args.create_jpg)
         elif args.mrc_file:
-            apple.process_micrograph(args.mrc_file)
+            apple.process_micrograph(args.mrc_file, create_jpg=args.create_jpg)

@@ -32,8 +32,6 @@ class FBBasis2D(Basis):
         ensure(len(set(size)) == 1, 'Only square domains are supported.')
         super().__init__(size, ell_max)
 
-
-
     def _build(self):
 
         logger.info('Expanding 2D images in spatial domain.')
@@ -55,7 +53,6 @@ class FBBasis2D(Basis):
 
         # get normalized factors
         self._norms = self.norms()
-
 
     def indices(self):
         indices_ells = np.zeros(self.basis_count)

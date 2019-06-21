@@ -4,6 +4,7 @@ import os
 import numpy as np
 from concurrent import futures
 from tqdm import tqdm
+from scipy import misc
 
 from aspyre.apple.picking import Picker
 from aspyre import config
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class Apple:
-    def __init__(self, output_dir=None, create_jpg=False):
+    def __init__(self, output_dir=None):
 
         self.particle_size = config.apple.particle_size
         self.query_image_size = config.apple.query_image_size
@@ -23,7 +24,6 @@ class Apple:
         self.container_size = config.apple.container_size
         self.n_threads = config.apple.n_threads
         self.output_dir = output_dir
-        self.create_jpg = create_jpg
 
         if self.query_image_size is None:
             query_image_size = np.round(self.particle_size * 2 / 3)
@@ -62,8 +62,7 @@ class Apple:
         ensure(self.particle_size >= self.query_image_size,
                f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!")
 
-    def process_folder(self, folder):
-
+    def process_folder(self, folder, create_jpg=False):
         filenames = glob.glob('{}/*.mrc'.format(folder))
         logger.info("converting {} mrc files..".format(len(filenames)))
 
@@ -71,30 +70,28 @@ class Apple:
         with futures.ThreadPoolExecutor(self.n_threads) as executor:
             to_do = []
             for filename in filenames:
-                future = executor.submit(self.process_micrograph, filename, False, False)
+                future = executor.submit(self.process_micrograph, filename, False, False, False, create_jpg)
                 to_do.append(future)
 
             for _ in futures.as_completed(to_do):
                 pbar.update(1)
         pbar.close()
 
-    def process_micrograph(self, filepath, return_centers=True, show_progress=True):
+    def process_micrograph(self, filepath, return_centers=True, return_img=False, show_progress=True, create_jpg=False):
+        ensure(not all([return_centers, return_img]), "Cannot specify both return_centers and return_img")
         ensure(filepath.endswith('.mrc'), f"Input file doesn't seem to be an MRC format! ({filepath})")
 
         picker = Picker(self.particle_size, self.max_particle_size, self.min_particle_size, self.query_image_size,
                         self.tau1, self.tau2, self.minimum_overlap_amount, self.container_size, filepath,
                         self.output_dir)
 
-        logger.info('Reading MRC file')
-        im = picker.read_mrc()
-
         logger.info('Computing scores for query images')
-        score = picker.query_score(im, show_progress=show_progress)  # compute score using normalized cross-correlations
+        score = picker.query_score(show_progress=show_progress)  # compute score using normalized cross-correlations
 
         while True:
             logger.info(f'Running svm with tau1={picker.tau1}, tau2={picker.tau2}')
             # train SVM classifier and classify all windows in micrograph
-            segmentation = picker.run_svm(im, score)
+            segmentation = picker.run_svm(score)
 
             # If all windows are classified identically, update tau_1 or tau_2
             if np.all(segmentation):
@@ -108,7 +105,41 @@ class Apple:
         segmentation = picker.morphology_ops(segmentation)
 
         logger.info('Getting particle centers')
-        centers = picker.extract_particles(segmentation, self.create_jpg)
+        centers = picker.extract_particles(segmentation)
+
+        particle_image = None
+        if create_jpg and self.output_dir is not None:
+            particle_image = self.particle_image(picker.im, centers)
+            misc.imsave(
+                os.path.join(self.output_dir, os.path.splitext(os.path.basename(picker.filename))[0] + '_result.jpg'),
+                particle_image
+            )
 
         if return_centers:
             return centers
+        elif return_img:
+            if particle_image is not None:
+                return particle_image
+            else:
+                return self.particle_image(picker.im, centers)
+
+    def particle_image(self, micro_img, centers):
+        """
+        Return a numpy array representing the picked centers on a micrograph, suitable for rendering in a jupyter
+            notebook or saving as a jpg etc.
+        :param micro_img: The micrograph image as a numpy array
+        :param centers: Picked centers for micrograph.
+        :return: A numpy array with picked centers displayed as rectangles
+        """
+        micro_img = micro_img - np.amin(micro_img)
+        picks = np.ones(micro_img.shape)
+        for i in range(0, centers.shape[0]):
+            y = int(centers[i, 1])
+            x = int(centers[i, 0])
+            d = int(np.floor(self.particle_size))
+            picks[y-d:y-d+5, x-d:x+d] = 0
+            picks[y+d:y+d+5, x-d:x+d] = 0
+            picks[y-d:y+d, x-d:x-d+5] = 0
+            picks[y-d:y+d, x+d:x+d+5] = 0
+
+        return np.multiply(micro_img, picks)

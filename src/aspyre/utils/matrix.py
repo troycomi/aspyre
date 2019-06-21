@@ -239,12 +239,12 @@ def vec_to_symmat(vec):
     ensure((M == 0.5*N*(N+1)) and N != 0, "Vector must be of size N*(N+1)/2 for some N>0.")
 
     vec, sz_roll = unroll_dim(vec, 2)
-    I = np.empty((N, N))
-    i_upper = np.triu_indices_from(I)
-    I[i_upper] = np.arange(M)    # Incrementally populate upper triangle in row major order
-    I.T[i_upper] = I[i_upper]  # Copy to lower triangle
+    index_matrix = np.empty((N, N))
+    i_upper = np.triu_indices_from(index_matrix)
+    index_matrix[i_upper] = np.arange(M)    # Incrementally populate upper triangle in row major order
+    index_matrix.T[i_upper] = index_matrix[i_upper]  # Copy to lower triangle
 
-    mat = vec[I.flatten('F').astype('int')]
+    mat = vec[index_matrix.flatten('F').astype('int')]
     mat = m_reshape(mat, (N, N) + mat.shape[1:])
     mat = roll_dim(mat, sz_roll)
 

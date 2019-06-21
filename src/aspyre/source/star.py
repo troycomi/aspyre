@@ -114,7 +114,7 @@ class Starfile(Micrograph):
         df['_mrc_found'] = df['_mrc_filepath'].apply(lambda filepath: os.path.exists(filepath))
 
         msg = f'Read starfile with {len(df)} records'
-        n_missing = sum(df['_mrc_found'] == False)
+        n_missing = sum(df['_mrc_found'] == False)  # nopep8
         if n_missing > 0:
             msg += f' ({n_missing} files missing)'
             logger.warning(msg)
@@ -142,7 +142,7 @@ class Starfile(Micrograph):
         self.df = Starfile.star2df(filepath)
 
         # Handle missing files
-        missing = self.df['_mrc_found'] == False
+        missing = self.df['_mrc_found'] == False  # nopep8
         n_missing = sum(missing)
         if ignore_missing_files:
             if n_missing > 0:
