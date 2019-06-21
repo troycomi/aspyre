@@ -62,7 +62,6 @@ class Basis:
 
         self.r0 = m_reshape(np.hstack(zeros), (-1, self.ell_max + 1))
 
-
     def _build(self):
         raise NotImplementedError('subclasses must implement this')
 
@@ -147,7 +146,7 @@ class Basis:
         b = self.evaluate_t(v)
         operator = LinearOperator(
             shape=(self.basis_count, self.basis_count),
-            matvec=lambda v: self.evaluate_t(self.evaluate(v))
+            matvec=lambda x: self.evaluate_t(self.evaluate(x))
         )
 
         # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v

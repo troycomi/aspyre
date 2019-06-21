@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Picker:
 
     def __init__(self, mrcfiles):

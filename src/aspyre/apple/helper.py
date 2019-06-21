@@ -155,25 +155,25 @@ class PickerHelper:
                                           x_contain - 1) * container_size + container_size)]
 
                 y, x = np.where(mean_contain == mean_contain.max())
-                if np.prod(y.shape)==1:
+                if np.prod(y.shape) == 1:
                     windows[win_idx, :, :] = temp[int(y):int(y + query_size),
                                                   int(x):int(x + query_size)]
                     win_idx = win_idx + 1
                     
                 y, x = np.where(mean_contain == mean_contain.min())
-                if np.prod(y.shape)==1:
+                if np.prod(y.shape) == 1:
                     windows[win_idx, :, :] = temp[int(y):int(y + query_size),
                                                   int(x):int(x + query_size)]
                     win_idx = win_idx + 1
                     
                 y, x = np.where(std_contain == std_contain.max())
-                if np.prod(y.shape)==1:
+                if np.prod(y.shape) == 1:
                     windows[win_idx, :, :] = temp[int(y):int(y + query_size),
                                                   int(x):int(x + query_size)]
                     win_idx = win_idx + 1
                     
                 y, x = np.where(std_contain == std_contain.min())
-                if np.prod(y.shape)==1:
+                if np.prod(y.shape) == 1:
                     windows[win_idx, :, :] = temp[int(y):int(y + query_size),
                                                   int(x):int(x + query_size)]
                     win_idx = win_idx + 1

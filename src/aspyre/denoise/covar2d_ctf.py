@@ -42,5 +42,5 @@ class Cov2DCTF(RotCov2D):
     def conj_grad(self, b_coeff):
         pass
 
-    def get_wiener_ctf(self, coeffs, filter_fb, filter_idx,mean_coeff, covar_coeff, noise_var):
+    def get_wiener_ctf(self, coeffs, filter_fb, filter_idx, mean_coeff, covar_coeff, noise_var):
         pass
