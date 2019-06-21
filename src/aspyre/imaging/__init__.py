@@ -73,11 +73,11 @@ def im_downsample(im, L_ds):
     return im_ds
 
 
-def im_filter(im, filter, *args, **kwargs):
+def im_filter(im, filt, *args, **kwargs):
     # TODO: Move inside appropriate object
     L = im.shape[0]
     im, sz_roll = unroll_dim(im, 3)
-    filter_vals = filter.evaluate_grid(L, *args, **kwargs)
+    filter_vals = filt.evaluate_grid(L, *args, **kwargs)
     im_f = centered_fft2(im)
     if im_f.ndim > filter_vals.ndim:
         im_f = np.expand_dims(filter_vals, 2) * im_f

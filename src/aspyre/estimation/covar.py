@@ -12,7 +12,8 @@ from aspyre.imaging.threed import rotated_grids
 from aspyre.nfft import anufft3
 from aspyre.utils.fft import mdim_ifftshift
 from aspyre.utils import ensure
-from aspyre.utils.matrix import vol_to_vec, vecmat_to_volmat, volmat_to_vecmat, symmat_to_vec_iso, vec_to_symmat_iso, make_symmat
+from aspyre.utils.matrix import vol_to_vec, vecmat_to_volmat, volmat_to_vecmat, symmat_to_vec_iso, vec_to_symmat_iso, \
+    make_symmat
 from aspyre.utils.matlab_compat import m_reshape
 from aspyre.estimation import Estimator
 from aspyre.estimation.mean import MeanEstimator
@@ -63,8 +64,8 @@ class CovarianceEstimator(Estimator):
             factors = np.zeros((_2L, _2L, _2L, batch_n), dtype=self.as_type)
 
             # TODO: Numpy has got to have a functional shortcut to avoid looping like this!
-            for i in range(batch_n):
-                factors[:, :, :, i] = anufft3(weights[:, i], pts_rot[:, :, i], (_2L, _2L, _2L), real=True)
+            for j in range(batch_n):
+                factors[:, :, :, j] = anufft3(weights[:, j], pts_rot[:, :, j], (_2L, _2L, _2L), real=True)
 
             factors = vol_to_vec(factors)
             kernel += vecmat_to_volmat(factors @ factors.T) / (n * L**8)

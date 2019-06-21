@@ -12,7 +12,8 @@ from aspyre.utils.matrix import anorm, acorr, ainner, vol_to_vec, vec_to_vol, ve
 
 
 class Simulation(ImageSource):
-    def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2, rots=None):
+    def __init__(self, L=8, n=1024, states=None, filters=None, offsets=None, amplitudes=None, dtype='single', C=2,
+                 rots=None):
         """
         A Cryo-EM simulation
         Other than the base class attributes, it has:

@@ -156,7 +156,8 @@ class IdentityFilter(ScalarFilter):
 
 
 class CTFFilter(Filter):
-    def __init__(self, pixel_size=None, voltage=None, defocus_u=None, defocus_v=None, defocus_ang=None, Cs=None, alpha=None, B=None, power=1):
+    def __init__(self, pixel_size=None, voltage=None, defocus_u=None, defocus_v=None, defocus_ang=None, Cs=None,
+                 alpha=None, B=None, power=1):
         """
         A CTF (Contrast Transfer Function) Filter
 
@@ -214,4 +215,5 @@ class CTFFilter(Filter):
 
 class RadialCTFFilter(CTFFilter):
     def __init__(self, pixel_size=None, voltage=None, defocus=None, Cs=None, alpha=None, B=None, power=1):
-        super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0, Cs=Cs, alpha=alpha, B=B, power=power)
+        super().__init__(pixel_size=pixel_size, voltage=voltage, defocus_u=defocus, defocus_v=defocus, defocus_ang=0,
+                         Cs=Cs, alpha=alpha, B=B, power=power)

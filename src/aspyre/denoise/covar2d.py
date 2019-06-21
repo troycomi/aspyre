@@ -35,7 +35,6 @@ class RotCov2D(Denoise):
         """
         pass
 
-
     def get_coeffs(self):
         """
         Apply adjoint mapping to 2D images and obtain the coefficients
@@ -43,4 +42,3 @@ class RotCov2D(Denoise):
         :return: The coefficients of `basis` after the adjoint mapping is applied to the images.
         """
         pass
-
