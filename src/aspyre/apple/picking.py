@@ -35,7 +35,7 @@ class Picker:
         self.filename = filename
         self.output_directory = output_directory
 
-        self.query_size -= self.query_size % 2
+        self.im = self.read_mrc()
 
     def read_mrc(self):
         """Gets and preprocesses micrograph.
@@ -71,20 +71,20 @@ class Picker:
 
         return im.astype('double')
 
-    def query_score(self, micro_img, show_progress=True):
+    def query_score(self, show_progress=True):
         """Calculates score for each query image.
 
         Extracts query images and reference windows. Computes the cross-correlation between these
         windows, and applies a threshold to compute a score for each query image.
 
         Args:
-            micro_img: Micrograph image.
             show_progress: Whether to show a progress bar
 
         Returns:
             Matrix containing a score for each query image.
         """
 
+        micro_img = self.im
         query_box = PickerHelper.extract_query(micro_img, int(self.query_size / 2))
 
         out_shape = query_box.shape[0], query_box.shape[1], query_box.shape[2], query_box.shape[3] // 2 + 1
@@ -141,7 +141,7 @@ class Picker:
 
         return np.sum(conv_map >= thresh, axis=2)
 
-    def run_svm(self, micro_img, score):
+    def run_svm(self, score):
         """
         Trains and uses an SVM classifier.
 
@@ -150,13 +150,14 @@ class Picker:
         as either noise or particle, resulting in a segmentation of the micrograph.
 
         Args:
-            micro_img: Micrograph image.
+
             score: Matrix containing a score for each query image.
 
         Returns:
             Segmentation of the micrograph into noise and particle projections.
         """
 
+        micro_img = self.im
         particle_windows = np.floor(self.tau1)
         non_noise_windows = np.ceil(self.tau2)
         bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img, particle_windows, non_noise_windows)
@@ -233,14 +234,13 @@ class Picker:
 
         return segmentation_e
 
-    def extract_particles(self, segmentation, create_jpg=False):
+    def extract_particles(self, segmentation):
         """
         Saves particle centers into output .star file, after dismissing regions
         that are too big to contain a particle.
 
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
-            create_jpg: whether to create jpg file of picked particles
         """
         segmentation = segmentation[self.query_size // 2 - 1:-self.query_size // 2,
                                     self.query_size // 2 - 1:-self.query_size // 2]
@@ -303,9 +303,6 @@ class Picker:
                 np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
                 np.savetxt(f, center, fmt='%d %d')
 
-        if create_jpg:
-            self.create_jpg(center)
-
         return center
 
     def get_maps(self, score, micro_img, particle_windows, non_noise_windows):
@@ -349,23 +346,3 @@ class Picker:
 
         return bw_mask_p, bw_mask_n
 
-    def create_jpg(self, centers):
-        with mrcfile.open(self.filename, mode='r') as mrc:
-            micro_img = mrc.data
-
-        micro_img = np.double(micro_img)
-        micro_img = micro_img - np.amin(micro_img)
-        picks = np.ones(micro_img.shape)
-        for i in range(0, centers.shape[0]):
-            y = int(centers[i, 1])
-            x = int(centers[i, 0])
-            d = int(np.floor(self.particle_size))
-            picks[y-d:y-d+5, x-d:x+d] = 0
-            picks[y+d:y+d+5, x-d:x+d] = 0
-            picks[y-d:y+d, x-d:x-d+5] = 0
-            picks[y-d:y+d, x+d:x+d+5] = 0
-
-        out_img = np.multiply(micro_img, picks)
-        image_filename = os.path.splitext(os.path.basename(self.filename))[0] + '_result.jpg'
-        image_path = os.path.join(self.output_directory, image_filename)
-        misc.imsave(image_path, out_img)
