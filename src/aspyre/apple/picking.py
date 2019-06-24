@@ -4,6 +4,7 @@ import logging
 import mrcfile
 import numpy as np
 import pyfftw
+import cupy
 from concurrent import futures
 from tqdm import tqdm
 
@@ -23,16 +24,19 @@ class Picker:
     def __init__(self, particle_size, max_size, min_size, query_size, tau1, tau2, moa,
                  container_size, filename, output_directory):
 
-        self.particle_size = particle_size // 2
-        self.max_size = max_size // 2
-        self.min_size = min_size // 2
-        self.query_size = query_size // 2
+        self.particle_size = int(particle_size / 2)
+        self.max_size = int(max_size / 2)
+        self.min_size = int(min_size / 2)
+        self.query_size = int(query_size / 2)
+        self.query_size -= self.query_size % 2
         self.tau1 = tau1
         self.tau2 = tau2
-        self.moa = moa // 2
-        self.container_size = container_size // 2
+        self.moa = int(moa / 2)
+        self.container_size = int(container_size / 2)
         self.filename = filename
         self.output_directory = output_directory
+
+        self.im = self.read_mrc()
 
     def read_mrc(self):
         """Gets and preprocesses micrograph.
@@ -68,77 +72,49 @@ class Picker:
 
         return im.astype('double')
 
-    def query_score(self, micro_img, show_progress=True):
+    def query_score(self, show_progress=True):
         """Calculates score for each query image.
 
         Extracts query images and reference windows. Computes the cross-correlation between these
         windows, and applies a threshold to compute a score for each query image.
 
         Args:
-            micro_img: Micrograph image.
             show_progress: Whether to show a progress bar
 
         Returns:
             Matrix containing a score for each query image.
         """
 
-        query_box = PickerHelper.extract_query(micro_img, int(self.query_size / 2))
+        micro_img = self.im
+        query_box = PickerHelper.extract_query(micro_img, self.query_size // 2)
 
-        qbox_dim0, qbox_dim1, qbox_dim2, qbox_dim3 = query_box.shape
-        qbox_dim3 = qbox_dim3 // 2 + 1
+        c_query_box = cupy.asarray(query_box)
+        query_box_a = cupy.fft.fft2(c_query_box, axes=(2, 3))
+        query_box = cupy.conj(query_box_a)
 
-        query_box_a = np.empty((qbox_dim0, qbox_dim1, qbox_dim2, qbox_dim3), dtype='complex128')
-        fft_class_f = pyfftw.FFTW(query_box, query_box_a, axes=(2, 3), direction='FFTW_FORWARD')
-        fft_class_f(query_box, query_box_a)
-        query_box = np.conj(query_box_a)
+        reference_box_a = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
 
-        refs = PickerHelper.extract_references(micro_img, self.query_size, self.container_size)
+        c_reference_box = cupy.asarray(reference_box_a)
+        reference_box = cupy.fft.fft2(c_reference_box, axes=(1, 2))
 
-        reference_box = np.empty((refs.shape[0], refs.shape[1], refs.shape[-1] // 2 + 1), dtype='complex128')
-        fft_class_f2 = pyfftw.FFTW(refs, reference_box, axes=(1, 2), direction='FFTW_FORWARD')
-        fft_class_f2(refs, reference_box)
-
-        conv_map = np.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
-
-        def _work(index):
-            window_t = np.empty(query_box.shape, dtype=query_box.dtype)
-            cc = np.empty((qbox_dim0, qbox_dim1, qbox_dim2, 2 * qbox_dim3 - 2), dtype=micro_img.dtype)
-            fft_class = pyfftw.FFTW(window_t, cc, axes=(2, 3), direction='FFTW_BACKWARD')
-
-            window_t = np.multiply(reference_box[index], query_box)
-            fft_class(window_t, cc)
-            return index, cc.real.max((2, 3)) - cc.real.mean((2, 3))
+        conv_map = cupy.zeros((reference_box.shape[0], query_box.shape[0], query_box.shape[1]))
 
         n_works = reference_box.shape[0]
-        n_threads = config.apple.conv_map_nthreads
 
-        pbar = tqdm(total=n_works, disable=not show_progress)
-        if n_threads > 1:
+        for index in range(n_works):
+            window_t = cupy.multiply(reference_box[index], query_box)
+            cc = cupy.fft.ifft2(window_t, axes=(2, 3))
+            conv_map[index, :, :] = cc.real.max((2, 3)) - cc.real.mean((2, 3))
 
-            with futures.ThreadPoolExecutor(n_threads) as executor:
-                to_do = [executor.submit(_work, i) for i in range(n_works)]
+        conv_map = cupy.transpose(conv_map, (1, 2, 0))
 
-                for future in futures.as_completed(to_do):
-                    i, res = future.result()
-                    conv_map[i, :, :] = res
-                    pbar.update(1)
-        else:
-
-            for i in range(n_works):
-                _, conv_map[i, :, :] = _work(i)
-                pbar.update(1)
-
-        pbar.close()
-
-        conv_map = np.transpose(conv_map, (1, 2, 0))
-
-        min_val = np.amin(conv_map)
-        max_val = np.amax(conv_map)
+        min_val = cupy.amin(conv_map)
+        max_val = cupy.amax(conv_map)
         thresh = min_val + (max_val - min_val) / config.apple.response_thresh_norm_factor
 
-        return np.sum(conv_map >= thresh, axis=2)
+        return cupy.asnumpy(cupy.sum(conv_map >= thresh, axis=2))
 
-    def run_svm(self, micro_img, score):
+    def run_svm(self, score):
         """
         Trains and uses an SVM classifier.
 
@@ -147,13 +123,14 @@ class Picker:
         as either noise or particle, resulting in a segmentation of the micrograph.
 
         Args:
-            micro_img: Micrograph image.
+
             score: Matrix containing a score for each query image.
 
         Returns:
             Segmentation of the micrograph into noise and particle projections.
         """
 
+        micro_img = self.im
         particle_windows = np.floor(self.tau1)
         non_noise_windows = np.ceil(self.tau2)
         bw_mask_p, bw_mask_n = Picker.get_maps(self, score, micro_img, particle_windows, non_noise_windows)
@@ -230,14 +207,13 @@ class Picker:
 
         return segmentation_e
 
-    def extract_particles(self, segmentation, create_jpg=False):
+    def extract_particles(self, segmentation):
         """
         Saves particle centers into output .star file, after dismissing regions
         that are too big to contain a particle.
 
         Args:
             segmentation: Segmentation of the micrograph into noise and particle projections.
-            create_jpg: whether to create jpg file of picked particles
         """
         segmentation = segmentation[self.query_size // 2 - 1:-self.query_size // 2,
                                     self.query_size // 2 - 1:-self.query_size // 2]
@@ -300,9 +276,6 @@ class Picker:
                 np.savetxt(f, ["data_root\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2"], fmt='%s')
                 np.savetxt(f, center, fmt='%d %d')
 
-        if create_jpg:
-            self.create_jpg(center)
-
         return center
 
     def get_maps(self, score, micro_img, particle_windows, non_noise_windows):
@@ -345,24 +318,3 @@ class Picker:
                 end_row_idx[j] - begin_row_idx[j], end_col_idx[j] - begin_col_idx[j])
 
         return bw_mask_p, bw_mask_n
-
-    def create_jpg(self, centers):
-        with mrcfile.open(self.filename, mode='r') as mrc:
-            micro_img = mrc.data
-
-        micro_img = np.double(micro_img)
-        micro_img = micro_img - np.amin(micro_img)
-        picks = np.ones(micro_img.shape)
-        for i in range(0, centers.shape[0]):
-            y = int(centers[i, 1])
-            x = int(centers[i, 0])
-            d = int(np.floor(self.particle_size))
-            picks[y-d:y-d+5, x-d:x+d] = 0
-            picks[y+d:y+d+5, x-d:x+d] = 0
-            picks[y-d:y+d, x-d:x-d+5] = 0
-            picks[y-d:y+d, x+d:x+d+5] = 0
-
-        out_img = np.multiply(micro_img, picks)
-        image_filename = os.path.splitext(os.path.basename(self.filename))[0] + '_result.jpg'
-        image_path = os.path.join(self.output_directory, image_filename)
-        misc.imsave(image_path, out_img)
